@@ -27,7 +27,8 @@ $GCLOUD_PATH run deploy flipbook-backend \
   --region $REGION \
   --allow-unauthenticated \
   --memory=2Gi \
-  --no-cpu-throttling
+  --no-cpu-throttling \
+  --ingress=internal
 
 # 백엔드 URL 추출
 BACKEND_URL=$($GCLOUD_PATH run services describe flipbook-backend --region $REGION --format 'value(status.url)')
@@ -49,7 +50,11 @@ $GCLOUD_PATH run deploy flipbook-frontend \
   --image gcr.io/$PROJECT_ID/flipbook-frontend \
   --platform managed \
   --region $REGION \
-  --allow-unauthenticated
+  --allow-unauthenticated \
+  --network=jwlee-vpc-001 \
+  --subnet=jwlee-vpc-001 \
+  --vpc-egress=all-traffic \
+  --set-env-vars NEXT_PUBLIC_BACKEND_URL=$BACKEND_URL
 
 FRONTEND_URL=$($GCLOUD_PATH run services describe flipbook-frontend --region $REGION --format 'value(status.url)')
 

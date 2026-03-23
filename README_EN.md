@@ -110,3 +110,20 @@ graph TD
     style GCS fill:#e6f4ea,stroke:#1e8e3e,stroke-width:2px
     style Firestore fill:#e6f4ea,stroke:#1e8e3e,stroke-width:2px
 ```
+
+---
+
+## 🔒 Direct VPC Internal Call & Responsive UI Upgrades
+
+With recent patches, **security-hardened internal routing** and **mobile screen fitting** are fully integrated.
+
+### 1. Mobile Responsive UI Fix
+*   **Dashboard**: Sidebar breaks into a **top horizontal menu bar** dynamically for vertical responsive stacking.
+*   **Flipbook Viewer**: **Hides the sidebar completely (`display: none`)** to consume maximizing reading screen widths, recalculating scale dimensions effectively.
+
+### 2. Direct VPC Egress & Next.js API Routes Proxy
+Locks outbound connections securely inside closed boundaries network.
+*   **Proxy Relay**: Requests do not trigger straight into Absolute URLs; `FE Server (Node.js)` triggers Proxy forward nodes. (`/api/backend/*`)
+*   **Internal Ingress**: `Backend Cloud Run` is launched with `--ingress=internal`, completely shutting off external internet pokes.
+*   **Direct VPC Egress**: Frontend communicates private channels with `--vpc-egress=all-traffic` parameters targeting only internal backbone layouts.
+```

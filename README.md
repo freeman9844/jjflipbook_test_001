@@ -112,3 +112,20 @@ graph TD
     style GCS fill:#e6f4ea,stroke:#1e8e3e,stroke-width:2px
     style Firestore fill:#e6f4ea,stroke:#1e8e3e,stroke-width:2px
 ```
+
+---
+
+## 🔒 Direct VPC 내부망 설계 및 반응형 UI 업데이트
+
+최근 패치를 통해 **보안이 강화된 내부망 라우팅** 및 **모바일 화면 대응 디자인**이 통합되었습니다.
+
+### 1. 모바일 반응형 UI 픽스
+*   **대시보드**: 모바일 환경에서 좌측 배너가 **상단 가로형 메뉴**로 자동 결합 변형되어 세로 스크롤 구조를 확보합니다.
+*   **플립북 뷰어**: 모바일 화면 폭을 최대치로 활용하기 위해 **사이드바를 오프라인 소거**하며, 가동 스케일 연산이 브라우저 너비 피팅에 최적화됩니다.
+
+### 2. Direct VPC Egress & Next.js API Routes Proxy
+인프라에 직접적인 노크 공격 폭격을 차단하기 위해 폐쇄 진영을 설계했습니다.
+*   **Proxy Relay**: 브라우저 클라이언트가 직접 백엔드를 찌르지 않고, `FE App Server (Node.js)`가 요청 연산을 Proxy 대리 위탁합니다. (`/api/backend/*`)
+*   **Internal Ingress**: 백엔드(`Backend Cloud Run`)는 `--ingress=internal`로 가동되어 공용 인터넷 진입이 완벽 차단됩니다.
+*   **Direct VPC Egress**: 프론트엔드가 `--vpc-egress=all-traffic` 플래그를 타고 오직 가상 사설망(VPC)의 탯줄을 통해서만 백엔드를 다이렉트 교신합니다.
+```

@@ -20,6 +20,20 @@ export default function Home() {
 
     const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
+    const [windowWidth, setWindowWidth] = useState(1200);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            setWindowWidth(window.innerWidth);
+            const handleResize = () => setWindowWidth(window.innerWidth);
+            window.addEventListener('resize', handleResize);
+            return () => window.removeEventListener('resize', handleResize);
+        }
+    }, []);
+
+    const isMobile = windowWidth < 768;
+    const styles = getStyles(isMobile);
+
     useEffect(() => {
         fetchBooks();
     }, []);
@@ -37,7 +51,7 @@ export default function Home() {
 
     const fetchBooks = async () => {
         try {
-            const res = await fetch(`${BACKEND_URL}/flipbooks`);
+            const res = await fetch(`/api/backend/flipbooks`);
             if (res.ok) {
                 const data = await res.json();
                 setBooks(data);
@@ -60,7 +74,7 @@ export default function Home() {
         formData.append("file", file);
 
         try {
-            const res = await fetch(`${BACKEND_URL}/upload?split_pages=${splitPages}`, {
+            const res = await fetch(`/api/backend/upload?split_pages=${splitPages}`, {
                 method: "POST",
                 body: formData
             });
@@ -86,7 +100,7 @@ export default function Home() {
     const confirmDelete = async () => {
         if (!deletingUuid) return;
         try {
-            const res = await fetch(`${BACKEND_URL}/flipbook/${deletingUuid}`, {
+            const res = await fetch(`/api/backend/flipbook/${deletingUuid}`, {
                 method: "DELETE"
             });
             if (res.ok) {
@@ -245,22 +259,22 @@ export default function Home() {
     );
 }
 
-const styles: Record<string, React.CSSProperties> = {
-    container: { display: 'flex', flexDirection: 'row', height: '100vh', width: '100vw', backgroundColor: '#f4f6f8', color: '#1a1a1a', fontFamily: 'system-ui, -apple-system, sans-serif' },
-    sidebar: { width: '220px', backgroundColor: 'white', borderRight: '1px solid #e4e7eb', display: 'flex', flexDirection: 'column', padding: '32px 16px', boxSizing: 'border-box', gap: '32px', zIndex: 10 },
-    logoArea: { display: 'flex', alignItems: 'center', paddingBottom: '16px', borderBottom: '1px solid #f1f3f5', marginLeft: '8px' },
+const getStyles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
+    container: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', height: '100vh', width: '100vw', backgroundColor: '#f4f6f8', color: '#1a1a1a', fontFamily: 'system-ui, -apple-system, sans-serif', overflowX: 'hidden' },
+    sidebar: { width: isMobile ? '100%' : '220px', backgroundColor: 'white', borderRight: isMobile ? 'none' : '1px solid #e4e7eb', borderBottom: isMobile ? '1px solid #e4e7eb' : 'none', display: 'flex', flexDirection: isMobile ? 'row' : 'column', padding: isMobile ? '16px' : '32px 16px', boxSizing: 'border-box', gap: isMobile ? '16px' : '32px', zIndex: 10, alignItems: isMobile ? 'center' : 'stretch' },
+    logoArea: { display: 'flex', alignItems: 'center', paddingBottom: isMobile ? '0' : '16px', borderBottom: isMobile ? 'none' : '1px solid #f1f3f5', marginLeft: '8px' },
     logoText: { fontSize: '20px', fontWeight: 'bold', color: '#1a1a1a', letterSpacing: '-0.5px' },
-    sidebarMenu: { display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 },
-    sidebarTab: { background: 'none', border: 'none', fontSize: '15px', color: '#4b5563', cursor: 'pointer', padding: '12px 16px', borderRadius: '10px', textAlign: 'left', fontWeight: 500, transition: 'all 0.2s', width: '100%' },
+    sidebarMenu: { display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: '8px', flex: isMobile ? 'none' : 1, width: isMobile ? 'auto' : '100%', marginLeft: isMobile ? 'auto' : '0' },
+    sidebarTab: { background: 'none', border: 'none', fontSize: '15px', color: '#4b5563', cursor: 'pointer', padding: '12px 16px', borderRadius: '10px', textAlign: 'left', fontWeight: 500, transition: 'all 0.2s', width: isMobile ? 'auto' : '100%' },
     sidebarTabActive: { backgroundColor: '#eef2ff', color: '#2563eb', fontWeight: 600 },
-    dashboardArea: { flex: 1, padding: '40px 60px', overflowY: 'auto' },
-    dashHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' },
+    dashboardArea: { flex: 1, padding: isMobile ? '24px' : '40px 60px', overflowY: 'auto' },
+    dashHeader: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: '32px', gap: isMobile ? '16px' : '0' },
     dashTitle: { fontSize: '24px', fontWeight: 'bold', margin: '0 0 4px 0', color: '#1a1a1a' },
     dashSub: { fontSize: '14px', color: '#5f6368', margin: 0 },
-    uploadBtn: { padding: '12px 24px', backgroundColor: '#1a73e8', color: 'white', border: 'none', borderRadius: '24px', fontWeight: 500, cursor: 'pointer', boxShadow: '0 4px 6px rgba(26, 115, 232, 0.2)', transition: 'all 0.2s' },
-    gridContainer: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '32px' },
+    uploadBtn: { padding: '12px 24px', backgroundColor: '#1a73e8', color: 'white', border: 'none', borderRadius: '24px', fontWeight: 500, cursor: 'pointer', boxShadow: '0 4px 6px rgba(26, 115, 232, 0.2)', transition: 'all 0.2s', width: isMobile ? '100%' : 'auto' },
+    gridContainer: { display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? '140px' : '200px'}, 1fr))`, gap: isMobile ? '16px' : '32px' },
     card: { backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' },
-    cardCover: { height: '260px', backgroundColor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #f0f0f0', overflow: 'hidden' },
+    cardCover: { height: isMobile ? '180px' : '260px', backgroundColor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #f0f0f0', overflow: 'hidden' },
     coverImage: { width: '100%', height: '100%', objectFit: 'contain' },
     coverPlaceholder: { color: '#5f6368' },
     cardInfo: { padding: '16px' },
@@ -279,7 +293,7 @@ const styles: Record<string, React.CSSProperties> = {
     loginForm: { backgroundColor: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)', width: '340px', display: 'flex', flexDirection: 'column', gap: '12px', boxSizing: 'border-box' },
     loginInput: { padding: '12px 16px', borderRadius: '8px', border: '1px solid #dadce0', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s', width: '100%', boxSizing: 'border-box' },
     loginBtn: { padding: '12px', backgroundColor: '#1a73e8', color: 'white', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s', marginTop: '8px', width: '100%' }
-};
+});
 
 // 키프레임 스피너 주입을 위한 CSS Injection 헥
 if (typeof document !== 'undefined') {

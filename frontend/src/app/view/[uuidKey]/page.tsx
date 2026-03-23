@@ -44,13 +44,13 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
     useEffect(() => {
         const fetchBook = async () => {
             try {
-                const res = await fetch(`${BACKEND_URL}/flipbook/${uuidKey}`);
+                const res = await fetch(`/api/backend/flipbook/${uuidKey}`);
                 if (!res.ok) throw new Error("플립북을 찾을 수 없거나 불러오지 못했습니다.");
                 const data = await res.json();
                 setBook(data);
 
                 // 오버레이 조회 추가
-                const overlayRes = await fetch(`${BACKEND_URL}/flipbook/${uuidKey}/overlays`);
+                const overlayRes = await fetch(`/api/backend/flipbook/${uuidKey}/overlays`);
                 if (overlayRes.ok) {
                     const overlayData = await overlayRes.json();
                     setOverlays(overlayData);
@@ -66,27 +66,31 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
     if (!book) return <div style={{ color: '#5f6368', padding: 20 }}>로딩 중...</div>;
 
     const hasImages = book.image_urls && book.image_urls.length > 0;
+    const isMobile = windowWidth < 768;
+    const styles = getStyles(isMobile);
 
     return (
         <div style={styles.container}>
             {/* 1. 좌측 세로형 사이드바 (Sidebar) */}
-            <div style={styles.sidebar}>
-                <div style={styles.logoArea}>
-                    <span style={styles.logoText}>JJFlipBook</span>
+            {!isMobile && (
+                <div style={styles.sidebar}>
+                    <div style={styles.logoArea}>
+                        <span style={styles.logoText}>JJFlipBook</span>
+                    </div>
+                    <div style={styles.sidebarMenu}>
+                        {isAdmin && (
+                            <button style={styles.sidebarTab} onClick={() => window.location.href = '/'}>My Documents</button>
+                        )}
+                        <button style={{ ...styles.sidebarTab, ...styles.sidebarTabActive }}>View</button>
+                    </div>
                 </div>
-                <div style={styles.sidebarMenu}>
-                    {isAdmin && (
-                        <button style={styles.sidebarTab} onClick={() => window.location.href = '/'}>My Documents</button>
-                    )}
-                    <button style={{ ...styles.sidebarTab, ...styles.sidebarTabActive }}>View</button>
-                </div>
-            </div>
+            )}
 
             {/* 2. 중앙 플립북 영역 */}
             <div style={styles.workspaceArea}>
                 {hasImages ? (
                     <div style={{ 
-                        transform: `scale(${Math.min((windowWidth - 240) / 500, (windowHeight - 80) / 700) * (zoom / 100)})`,
+                        transform: `scale(${Math.min((windowWidth - (isMobile ? 40 : 240)) / 500, (windowHeight - (isMobile ? 120 : 80)) / 700) * (zoom / 100)})`,
                         transformOrigin: 'center center',
                         width: '500px', 
                         height: '700px', 
@@ -180,23 +184,23 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
     );
 }
 
-const styles: Record<string, React.CSSProperties> = {
-    container: { display: 'flex', flexDirection: 'row', height: '100vh', width: '100vw', backgroundColor: '#f5f7f9', color: '#1a1a1a', fontFamily: 'system-ui, -apple-system, sans-serif' },
-    sidebar: { width: '220px', backgroundColor: 'white', borderRight: '1px solid #e4e7eb', display: 'flex', flexDirection: 'column', padding: '32px 16px', boxSizing: 'border-box', gap: '32px', zIndex: 10 },
-    logoArea: { display: 'flex', alignItems: 'center', paddingBottom: '16px', borderBottom: '1px solid #f1f3f5', marginLeft: '8px' },
+const getStyles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
+    container: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', height: '100vh', width: '100vw', backgroundColor: '#f5f7f9', color: '#1a1a1a', fontFamily: 'system-ui, -apple-system, sans-serif', overflow: 'hidden' },
+    sidebar: { width: isMobile ? '100%' : '220px', backgroundColor: 'white', borderRight: isMobile ? 'none' : '1px solid #e4e7eb', borderBottom: isMobile ? '1px solid #e4e7eb' : 'none', display: 'flex', flexDirection: isMobile ? 'row' : 'column', padding: isMobile ? '16px' : '32px 16px', boxSizing: 'border-box', gap: isMobile ? '16px' : '32px', zIndex: 10 },
+    logoArea: { display: 'flex', alignItems: 'center', paddingBottom: isMobile ? '0' : '16px', borderBottom: isMobile ? 'none' : '1px solid #f1f3f5', marginLeft: '8px' },
     logoText: { fontSize: '20px', fontWeight: 'bold', color: '#1a1a1a', letterSpacing: '-0.5px' },
-    sidebarMenu: { display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 },
+    sidebarMenu: { display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: '8px', flex: 1 },
     sidebarTab: { background: 'none', border: 'none', fontSize: '15px', color: '#4b5563', cursor: 'pointer', padding: '12px 16px', borderRadius: '10px', textAlign: 'left', fontWeight: 500, transition: 'all 0.2s', width: '100%' },
     sidebarTabActive: { backgroundColor: '#eef2ff', color: '#2563eb', fontWeight: 600 },
-    workspaceArea: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: '24px', overflow: 'hidden' },
+    workspaceArea: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: isMobile ? '12px' : '24px', overflow: 'hidden' },
     pageItem: { backgroundColor: 'white', boxShadow: '0 0 15px rgba(0,0,0,0.15)', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', width: '100%', height: '100%' },
     pageImage: { width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' },
-    bottomBar: { position: 'absolute', bottom: '24px', display: 'flex', gap: '24px', backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '7px 16px', borderRadius: '24px', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)', backdropFilter: 'blur(10px)', alignItems: 'center' },
+    bottomBar: { position: 'absolute', bottom: isMobile ? '12px' : '24px', display: 'flex', gap: '24px', backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '7px 16px', borderRadius: '24px', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)', backdropFilter: 'blur(10px)', alignItems: 'center', transform: isMobile ? 'scale(0.9)' : 'none' },
     zoomControl: { display: 'flex', alignItems: 'center', gap: '8px' },
     pillBtn: { width: '22px', height: '22px', border: 'none', backgroundColor: '#f1f3f4', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: '#5f6368' },
     zoomText: { fontSize: '12px', fontWeight: 500, color: '#3c4043', width: '36px', textAlign: 'center' },
     pagerControl: { display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '1px solid #e8eaed', paddingLeft: '16px' },
     pagerBtn: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#5f6368', padding: 0 },
     pagerText: { fontSize: '12px', fontWeight: 500, color: '#3c4043' }
-};
+});
 
