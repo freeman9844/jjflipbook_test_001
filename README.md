@@ -97,7 +97,10 @@ npm run dev
 ```mermaid
 graph TD
     User([사용자 / 웹 브라우저]) -->|1. HTTPS 접속| FE_Run["Frontend (Next.js) <br> Cloud Run"];
-    FE_Run -->|2. REST API / Upload| BE_Run["Backend (FastAPI) <br> Cloud Run"];
+    
+    subgraph VPC ["VPC 사설망 (Direct VPC Egress)"]
+        FE_Run -->|2. Proxy API 중계| BE_Run["Backend (FastAPI) <br> Cloud Run <br> (Ingress: Internal)"];
+    end
     
     subgraph Google Cloud Platform
         BE_Run -->|3. PDF 이미지 분할| Poppler["Poppler-utils <br> (컨테이너 내장)"];

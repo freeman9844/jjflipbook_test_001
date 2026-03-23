@@ -95,7 +95,10 @@ Using the shell script (`deploy.sh`) included in this project, you can build Art
 ```mermaid
 graph TD
     User([User / Web Browser]) -->|1. HTTPS Request| FE_Run["Frontend (Next.js) <br> Cloud Run"];
-    FE_Run -->|2. REST API / Upload| BE_Run["Backend (FastAPI) <br> Cloud Run"];
+    
+    subgraph VPC ["VPC Private Network (Direct VPC Egress)"]
+        FE_Run -->|2. Proxy API Relay| BE_Run["Backend (FastAPI) <br> Cloud Run <br> (Ingress: Internal)"];
+    end
     
     subgraph Google Cloud Platform
         BE_Run -->|3. Split PDF to Images| Poppler["Poppler-utils <br> (Built-in)"];
