@@ -1,0 +1,12 @@
+fastapi[all]
+uvicorn
+sqlmodel
+pdf2image
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+python-dotenv
+python-multipart
+Pillow
+google-cloud-storage
+google-cloud-firestore

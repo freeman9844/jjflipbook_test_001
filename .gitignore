@@ -1,0 +1,21 @@
+# Local Environment variables
+backend/.env
+backend/.env.*
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+backend/__pycache__/
+
+# Node.js bundles
+node_modules/
+.next/
+frontend/.next/
+frontend/node_modules/
+
+# Local databases
+backend/*.db
+
+# OS overhead
+.DS_Store

@@ -1,0 +1,290 @@
+"use client";
+
+import React, { useEffect, useState, useRef } from 'react';
+
+interface Flipbook {
+    id: number;
+    uuid_key: string; // 추가
+    title: string;
+    page_count: number;
+    image_paths_json: string;
+    created_at: string;
+}
+
+export default function Home() {
+    const [books, setBooks] = useState<Flipbook[]>([]);
+    const [uploading, setUploading] = useState(false);
+    const [deletingUuid, setDeletingUuid] = useState<string | null>(null); // 변경
+    const [splitPages, setSplitPages] = useState<boolean>(true); // 추가: 페이지 분할 여부
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
+    useEffect(() => {
+        fetchBooks();
+    }, []);
+
+    // 페이지 처리 중인 도서(page_count === 0)가 있으면 3초 동적 폴링 유닛 활성
+    useEffect(() => {
+        const isProcessing = books.some(b => b.page_count === 0);
+        if (isProcessing) {
+            const timer = setInterval(() => {
+                fetchBooks();
+            }, 3000);
+            return () => clearInterval(timer);
+        }
+    }, [books]);
+
+    const fetchBooks = async () => {
+        try {
+            const res = await fetch(`${BACKEND_URL}/flipbooks`);
+            if (res.ok) {
+                const data = await res.json();
+                setBooks(data);
+            }
+        } catch (err) {
+            console.error("도서 목록을 불러오지 못했습니다.", err);
+        }
+    };
+
+    const handleUploadClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await fetch(`${BACKEND_URL}/upload?split_pages=${splitPages}`, {
+                method: "POST",
+                body: formData
+            });
+            if (res.ok) {
+                alert("🎉 PDF 업로드가 수신되었습니다. 백그라운드 변환이 시작됩니다.");
+                setTimeout(() => fetchBooks(), 3000); // 3초 뒤 목록에 투영되도록 보정
+            } else {
+                alert("❌ 업로드 처리 실패가 발생했습니다.");
+            }
+        } catch (err) {
+            alert("❌ 통신 중 에러가 발생했습니다.");
+        } finally {
+            setUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
+
+    const handleDeleteClick = (e: React.MouseEvent, uuid: string) => {
+        e.stopPropagation(); // 카드 클릭 리스너 방지
+        setDeletingUuid(uuid); // 삭제 레이어 모달 활성
+    };
+
+    const confirmDelete = async () => {
+        if (!deletingUuid) return;
+        try {
+            const res = await fetch(`${BACKEND_URL}/flipbook/${deletingUuid}`, {
+                method: "DELETE"
+            });
+            if (res.ok) {
+                setBooks(prev => prev.filter(b => b.uuid_key !== deletingUuid));
+            } else {
+                alert("❌ 문서 삭제 실패 반응이 일어났습니다.");
+            }
+        } catch (err) {
+            alert("❌ 삭제 통신 중 에러가 발생했습니다.");
+        } finally {
+            setDeletingUuid(null); // 모달 해제
+        }
+    };
+
+    return (
+        <div style={styles.container}>
+            {/* 1. 좌측 세로형 사이드바 (Sidebar) */}
+            <div style={styles.sidebar}>
+                <div style={styles.logoArea}>
+                    <span style={styles.logoText}>JJFlipBook</span>
+                </div>
+                <div style={styles.sidebarMenu}>
+                    <button style={{ ...styles.sidebarTab, ...styles.sidebarTabActive }}>My Documents</button>
+                    <button style={styles.sidebarTab} onClick={() => alert("개별 Flipbook의 View 버튼을 눌러주세요.")}>View</button>
+                </div>
+            </div>
+
+            {/* 2. 대시보드 메인 영역 */}
+            <div style={styles.dashboardArea}>
+                <div style={styles.dashHeader}>
+                    <div>
+                        <h1 style={styles.dashTitle}>My Documents</h1>
+                        <p style={styles.dashSub}>업로드한 PDF 문서 목록을 관리하고 읽어보세요.</p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '14px', color: '#5f6368' }}>
+                            <input 
+                                type="checkbox" 
+                                checked={splitPages} 
+                                onChange={(e) => setSplitPages(e.target.checked)} 
+                                style={{ cursor: 'pointer' }}
+                            />
+                            📄 1p ➡️ 2장 분할 (스프레드)
+                        </label>
+                        <input 
+                            type="file" 
+                            accept=".pdf" 
+                            ref={fileInputRef} 
+                            style={{ display: 'none' }} 
+                            onChange={handleFileChange} 
+                        />
+                        <button style={styles.uploadBtn} onClick={handleUploadClick} disabled={uploading}>
+                            {uploading ? "업로드 중..." : "+ PDF 업로드"}
+                        </button>
+                    </div>
+                </div>
+
+                {books.length === 0 ? (
+                    <div style={styles.emptyState}>
+                        <div style={styles.emptyIcon}>📂</div>
+                        <p style={styles.emptyText}>아직 업로드된 문서가 없습니다. 새로운 pdf 를 투입해주세요!</p>
+                    </div>
+                ) : (
+                    <div style={styles.gridContainer}>
+                        {books.map((book) => {
+                            let coverUrl = null;
+                            try {
+                                const paths = JSON.parse(book.image_paths_json);
+                                if (paths && paths.length > 0) {
+                                    const GCS_BUCKET_NAME = "jjflipbook-gcs-001";
+                                    coverUrl = `https://storage.googleapis.com/${GCS_BUCKET_NAME}/flipbooks/${book.id}/${paths[0]}`;
+                                }
+                            } catch (e) {}
+
+                            const isProcessing = book.page_count === 0;
+
+                            return (
+                                <div 
+                                    key={book.id} 
+                                    style={{ 
+                                        ...styles.card, 
+                                        opacity: isProcessing ? 0.75 : 1, 
+                                        cursor: isProcessing ? 'not-allowed' : 'pointer',
+                                        position: 'relative'
+                                    }} 
+                                    onClick={() => {
+                                        if (!isProcessing) window.location.href = `/view/${book.uuid_key}`;
+                                    }}
+                                >
+                                    {/* 삭제 버튼 추가 */}
+                                    <button 
+                                        style={styles.deleteBtn} 
+                                        onClick={(e) => handleDeleteClick(e, book.uuid_key)}
+                                        title="삭제"
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e11d48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        </svg>
+                                    </button>
+
+                                    {isProcessing && (
+                                        <div style={styles.processingOverlay}>
+                                            <div style={styles.spinner}></div>
+                                            <span style={styles.processingText}>변환 처리 중...</span>
+                                        </div>
+                                    )}
+                                    <div style={styles.cardCover}>
+                                        {coverUrl ? (
+                                            <img src={coverUrl} alt={book.title} style={styles.coverImage} />
+                                        ) : (
+                                            <div style={styles.coverPlaceholder}>
+                                                <span style={{ fontSize: '32px' }}>📖</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div style={styles.cardInfo}>
+                                        <h4 style={styles.cardTitle}>{book.title}</h4>
+                                        <p style={styles.cardSub}>
+                                            {isProcessing ? "분석 중..." : `페이지 수: ${book.page_count}p`}
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* 삭제 확인 모달 추가 */}
+            {deletingUuid !== null && (
+                <div style={styles.modalBackdrop}>
+                    <div style={styles.modalContent}>
+                        <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', color: '#1a1a1a' }}>문서 삭제</h3>
+                        <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#5f6368' }}>
+                            정말 이 문서를 삭제하시겠습니까? 관련 데이터가 모두 소멸됩니다.
+                        </p>
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                            <button 
+                                onClick={() => setDeletingUuid(null)} 
+                                style={{ padding: '8px 16px', backgroundColor: '#f1f3f4', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
+                            >
+                                취소
+                            </button>
+                            <button 
+                                onClick={confirmDelete} 
+                                style={{ padding: '8px 16px', backgroundColor: '#e11d48', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
+                            >
+                                삭제하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+const styles: Record<string, React.CSSProperties> = {
+    container: { display: 'flex', flexDirection: 'row', height: '100vh', width: '100vw', backgroundColor: '#f4f6f8', color: '#1a1a1a', fontFamily: 'system-ui, -apple-system, sans-serif' },
+    sidebar: { width: '220px', backgroundColor: 'white', borderRight: '1px solid #e4e7eb', display: 'flex', flexDirection: 'column', padding: '32px 16px', boxSizing: 'border-box', gap: '32px', zIndex: 10 },
+    logoArea: { display: 'flex', alignItems: 'center', paddingBottom: '16px', borderBottom: '1px solid #f1f3f5', marginLeft: '8px' },
+    logoText: { fontSize: '20px', fontWeight: 'bold', color: '#1a1a1a', letterSpacing: '-0.5px' },
+    sidebarMenu: { display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 },
+    sidebarTab: { background: 'none', border: 'none', fontSize: '15px', color: '#4b5563', cursor: 'pointer', padding: '12px 16px', borderRadius: '10px', textAlign: 'left', fontWeight: 500, transition: 'all 0.2s', width: '100%' },
+    sidebarTabActive: { backgroundColor: '#eef2ff', color: '#2563eb', fontWeight: 600 },
+    dashboardArea: { flex: 1, padding: '40px 60px', overflowY: 'auto' },
+    dashHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' },
+    dashTitle: { fontSize: '24px', fontWeight: 'bold', margin: '0 0 4px 0', color: '#1a1a1a' },
+    dashSub: { fontSize: '14px', color: '#5f6368', margin: 0 },
+    uploadBtn: { padding: '12px 24px', backgroundColor: '#1a73e8', color: 'white', border: 'none', borderRadius: '24px', fontWeight: 500, cursor: 'pointer', boxShadow: '0 4px 6px rgba(26, 115, 232, 0.2)', transition: 'all 0.2s' },
+    gridContainer: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '32px' },
+    card: { backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' },
+    cardCover: { height: '260px', backgroundColor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #f0f0f0', overflow: 'hidden' },
+    coverImage: { width: '100%', height: '100%', objectFit: 'contain' },
+    coverPlaceholder: { color: '#5f6368' },
+    cardInfo: { padding: '16px' },
+    cardTitle: { fontSize: '15px', fontWeight: 600, color: '#1a1a1a', margin: '0 0 4px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+    cardSub: { fontSize: '12px', color: '#5f6368', margin: 0 },
+    emptyState: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '300px', gap: '16px' },
+    emptyIcon: { fontSize: '48px' },
+    emptyText: { color: '#5f6368', fontSize: '15px' },
+    processingOverlay: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(255, 255, 255, 0.8)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10, borderRadius: '12px', gap: '12px' },
+    processingText: { fontSize: '14px', color: '#1a73e8', fontWeight: 600 },
+    spinner: { width: '24px', height: '24px', border: '3px solid #f3f3f3', borderTop: '3px solid #1a73e8', borderRadius: '50%', animation: 'spin 1s linear infinite' },
+    deleteBtn: { position: 'absolute', top: '12px', right: '12px', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'rgba(255, 255, 255, 0.9)', border: '1px solid #f1f3f4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 12, boxShadow: '0 2px 6px rgba(0,0,0,0.08)', transition: 'all 0.2s' },
+    modalBackdrop: { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 },
+    modalContent: { backgroundColor: 'white', padding: '24px', borderRadius: '12px', width: '360px', boxShadow: '0 12px 36px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column' },
+    loginContainer: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', width: '100vw', backgroundColor: '#f4f6f8' },
+    loginForm: { backgroundColor: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)', width: '340px', display: 'flex', flexDirection: 'column', gap: '12px', boxSizing: 'border-box' },
+    loginInput: { padding: '12px 16px', borderRadius: '8px', border: '1px solid #dadce0', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s', width: '100%', boxSizing: 'border-box' },
+    loginBtn: { padding: '12px', backgroundColor: '#1a73e8', color: 'white', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s', marginTop: '8px', width: '100%' }
+};
+
+// 키프레임 스피너 주입을 위한 CSS Injection 헥
+if (typeof document !== 'undefined') {
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
+    document.head.appendChild(styleSheet);
+}
+
