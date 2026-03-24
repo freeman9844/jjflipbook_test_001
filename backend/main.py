@@ -7,7 +7,7 @@ import os
 import json
 
 from pdf_utils import convert_pdf_to_images
-from models import User, Flipbook, Overlay
+from models import User, Flipbook, Overlay, Folder
 
 import bcrypt
 
@@ -138,13 +138,14 @@ async def upload_pdf(
     background_tasks: BackgroundTasks, 
     file: UploadFile = File(...),
     split_pages: bool = Query(True),
+    folder_id: str = Query(None), # 추가: 폴더 ID
     validated: bool = Depends(verify_api_key)
 ):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files allowed")
         
     # 1. Flipbook 개체 생성
-    book = Flipbook(title=file.filename)
+    book = Flipbook(title=file.filename, folder_id=folder_id)
     
     # 날짜 폴더 문자열 생성 (YYYYMMDD)
     from datetime import datetime
@@ -183,6 +184,70 @@ def list_flipbooks():
         d["id"] = doc.id # Next.js 호환을 위해 id 필드 매핑
         results.append(d)
     return results
+
+# --- Folder API ---
+@app.post("/folder")
+def create_folder(folder: Folder, validated: bool = Depends(verify_api_key)):
+    import uuid
+    folder_id = str(uuid.uuid4())
+    folder.id = folder_id
+    db.collection("folders").document(folder_id).set(folder.dict())
+    return {"status": "ok", "folder_id": folder_id}
+
+@app.get("/folders")
+def get_folders():
+    docs = db.collection("folders").stream()
+    results = []
+    for doc in docs:
+        d = doc.to_dict()
+        d["id"] = doc.id
+        results.append(d)
+    # 최신순 정렬
+    results.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return results
+
+def delete_single_flipbook(uuid_key: str):
+    doc_ref = db.collection("flipbooks").document(uuid_key)
+    if not doc_ref.get().exists:
+        return
+        
+    # 1. 서브 컬렉션 (Overlays) 삭제
+    overlays = doc_ref.collection("overlays").stream()
+    batch = db.batch()
+    for d in overlays:
+        batch.delete(d.reference)
+    batch.commit()
+        
+    # 2. 메인 플립북 문서 삭제 부가 정보 추출
+    book_data = doc_ref.get().to_dict()
+    date_str = book_data.get("date_folder", "")
+    doc_ref.delete()
+    
+    # 3. GCS 블롭 소거 (Prefix 기반)
+    try:
+        prefix_path = f"flipbooks/{date_str}/{uuid_key}/" if date_str else f"flipbooks/{uuid_key}/"
+        blobs = bucket.list_blobs(prefix=prefix_path)
+        for b in blobs:
+            b.delete()
+    except Exception as e:
+         print(f"⚠️ [Delete] GCS cleanup failed for book-{uuid_key}: {str(e)}")
+
+@app.delete("/folder/{folder_id}")
+def delete_folder(folder_id: str, validated: bool = Depends(verify_api_key)):
+    folder_ref = db.collection("folders").document(folder_id)
+    if not folder_ref.get().exists:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    
+    # Cascade Delete: 속한 플립북 모두 삭제
+    flipbooks = db.collection("flipbooks").where("folder_id", "==", folder_id).stream()
+    deleted_count = 0
+    for fb in flipbooks:
+        delete_single_flipbook(fb.id)
+        deleted_count += 1
+        
+    # 폴더 문서 삭제
+    folder_ref.delete()
+    return {"status": "ok", "message": f"Folder deleted with {deleted_count} flipbooks cascade deleted."}
 
 @app.get("/flipbook/{uuid_key}")
 def get_flipbook(uuid_key: str):
@@ -240,25 +305,5 @@ def delete_flipbook(uuid_key: str, validated: bool = Depends(verify_api_key)):
     if not doc_ref.get().exists:
         raise HTTPException(status_code=404, detail="Flipbook not found")
         
-    # 1. 서브 컬렉션 (Overlays) 삭제
-    overlays = doc_ref.collection("overlays").stream()
-    batch = db.batch()
-    for d in overlays:
-        batch.delete(d.reference)
-    batch.commit()
-        
-    # 2. 메인 플립북 문서 삭제 부가 정보 추출
-    book_data = doc_ref.get().to_dict()
-    date_str = book_data.get("date_folder", "")
-    doc_ref.delete()
-    
-    # 3. GCS 블롭 소거 (Prefix 기반)
-    try:
-        prefix_path = f"flipbooks/{date_str}/{uuid_key}/" if date_str else f"flipbooks/{uuid_key}/"
-        blobs = bucket.list_blobs(prefix=prefix_path)
-        for b in blobs:
-            b.delete()
-    except Exception as e:
-         print(f"⚠️ [Delete] GCS cleanup failed for book-{uuid_key}: {str(e)}")
-         
+    delete_single_flipbook(uuid_key)
     return {"status": "ok", "message": "Flipbook deleted successfully"}

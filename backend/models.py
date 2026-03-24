@@ -9,9 +9,16 @@ class User(BaseModel):
     password_hash: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+class Folder(BaseModel):
+    id: Optional[str] = None
+    name: str
+    user_id: str = "admin"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 class Flipbook(BaseModel):
     uuid_key: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
+    folder_id: Optional[str] = None # 속한 폴더의 ID (null 이면 최상단)
     user_id: str = "admin"
     page_count: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)
