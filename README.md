@@ -88,8 +88,6 @@ npm run dev
 └── deploy.sh              # Cloud Run 원클릭 배포 자동화 마스터 스크립트
 ```
 
-
-
 ---
 
 ## ☁️ Google Cloud 배포 구조도 (Architecture)
@@ -150,4 +148,29 @@ graph TD
 대용량 PDF 처리 및 클라우드 전송에 수반되던 시간적 지연 병목을 **구조적 병렬화**로 완전히 단축했습니다.
 *   **렌더링 멀티 프로세스**: `pdf2image` 디코딩 연산자에 `thread_count=4` 분산 레벨을 부여하여 무거운 변환 코스트를 분할 가속합니다.
 *   **스레딩 GCS 동시 업로드**: I/O 바운드 구간을 `ThreadPoolExecutor` 풀 구조로 우회하여 5개의 연동 페이로드가 **동시 다발적 릴레이 전송**을 우월하게 수행합니다.
+
+---
+
+## ☁️ Google Cloud 배포 구조도 (Architecture)
+
+```mermaid
+graph TD
+    User([사용자 / 웹 브라우저]) -->|1. HTTPS 접속| FE_Run["Frontend (Next.js) <br> Cloud Run"];
+    
+    subgraph VPC ["VPC 사설망 (Direct VPC Egress)"]
+        FE_Run -->|2. Proxy API 중계| BE_Run["Backend (FastAPI) <br> Cloud Run <br> (Ingress: Internal)"];
+    end
+    
+    subgraph Google Cloud Platform
+        BE_Run -->|3. PDF 이미지 분할| Poppler["Poppler-utils <br> (컨테이너 내장)"];
+        BE_Run -->|4. 원본 / 변환 이미지 저장| GCS[("Cloud Storage <br> 이미지 버킷")];
+        BE_Run -->|5. 메타데이터 / 오버레이 저장| Firestore[("Cloud Firestore <br> NoSQL DB")];
+        
+        GCS -.->|6. 이미지 다이렉트 로딩| User;
+    end
+
+    style FE_Run fill:#e8f0fe,stroke:#1a73e8,stroke-width:2px
+    style BE_Run fill:#e8f0fe,stroke:#1a73e8,stroke-width:2px
+    style GCS fill:#e6f4ea,stroke:#1e8e3e,stroke-width:2px
+    style Firestore fill:#e6f4ea,stroke:#1e8e3e,stroke-width:2px
 ```
