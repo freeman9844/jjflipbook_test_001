@@ -1,0 +1,342 @@
+2026-03-23 17:30:19 INFO:     Waiting for application shutdown.
+2026-03-23 17:30:19 INFO:     Application shutdown complete.
+2026-03-23 17:30:19 INFO:     Finished server process [1]
+2026-03-23 22:17:56 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-23 22:18:01 INFO:     Started server process [1]
+2026-03-23 22:18:01 INFO:     Waiting for application startup.
+2026-03-23 22:18:01 INFO:     Application startup complete.
+2026-03-23 22:18:01 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-23 22:18:01 INFO:     169.254.169.126:34072 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-23 22:18:07 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071
+2026-03-23 22:18:07 INFO:     169.254.169.126:30674 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071 HTTP/1.1" 200 OK
+2026-03-23 22:18:07 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays
+2026-03-23 22:18:07 INFO:     169.254.169.126:30688 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays HTTP/1.1" 200 OK
+2026-03-23 22:33:15 INFO:     Shutting down
+2026-03-23 22:33:15 INFO:     Waiting for application shutdown.
+2026-03-23 22:33:15 INFO:     Application shutdown complete.
+2026-03-23 22:33:15 INFO:     Finished server process [1]
+2026-03-24 00:27:41 INFO:     Started server process [1]
+2026-03-24 00:27:41 INFO:     Waiting for application startup.
+2026-03-24 00:27:41 (trapped) error reading bcrypt version
+2026-03-24 00:27:41 Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-24 00:27:41 ERROR:    Traceback (most recent call last):
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+2026-03-24 00:27:41     async with self.lifespan_context(app) as maybe_state:
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/contextlib.py", line 210, in __aenter__
+2026-03-24 00:27:41     return await anext(self.gen)
+2026-03-24 00:27:41            ^^^^^^^^^^^^^^^^^^^^^
+2026-03-24 00:27:41   File "/app/main.py", line 31, in lifespan
+2026-03-24 00:27:41     password_hash=pwd_context.hash("admin")
+2026-03-24 00:27:41                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/passlib/context.py", line 2258, in hash
+2026-03-24 00:27:41     return record.hash(secret, **kwds)
+2026-03-24 00:27:41            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/passlib/utils/handlers.py", line 779, in hash
+2026-03-24 00:27:41     self.checksum = self._calc_checksum(secret)
+2026-03-24 00:27:41                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/passlib/handlers/bcrypt.py", line 591, in _calc_checksum
+2026-03-24 00:27:41     self._stub_requires_backend()
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/passlib/utils/handlers.py", line 2254, in _stub_requires_backend
+2026-03-24 00:27:41     cls.set_backend()
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/passlib/utils/handlers.py", line 2156, in set_backend
+2026-03-24 00:27:41     return owner.set_backend(name, dryrun=dryrun)
+2026-03-24 00:27:41            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/passlib/utils/handlers.py", line 2163, in set_backend
+2026-03-24 00:27:41     return cls.set_backend(name, dryrun=dryrun)
+2026-03-24 00:27:41            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/passlib/utils/handlers.py", line 2188, in set_backend
+2026-03-24 00:27:41     cls._set_backend(name, dryrun)
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/passlib/utils/handlers.py", line 2311, in _set_backend
+2026-03-24 00:27:41     super(SubclassBackendMixin, cls)._set_backend(name, dryrun)
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/passlib/utils/handlers.py", line 2224, in _set_backend
+2026-03-24 00:27:41     ok = loader(**kwds)
+2026-03-24 00:27:41          ^^^^^^^^^^^^^^
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/passlib/handlers/bcrypt.py", line 626, in _load_backend_mixin
+2026-03-24 00:27:41     return mixin_cls._finalize_backend_mixin(name, dryrun)
+2026-03-24 00:27:41            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/passlib/handlers/bcrypt.py", line 421, in _finalize_backend_mixin
+2026-03-24 00:27:41     if detect_wrap_bug(IDENT_2A):
+2026-03-24 00:27:41        ^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/passlib/handlers/bcrypt.py", line 380, in detect_wrap_bug
+2026-03-24 00:27:41     if verify(secret, bug_hash):
+2026-03-24 00:27:41        ^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/passlib/utils/handlers.py", line 792, in verify
+2026-03-24 00:27:41     return consteq(self._calc_checksum(secret), chk)
+2026-03-24 00:27:41                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24 00:27:41   File "/usr/local/lib/python3.11/site-packages/passlib/handlers/bcrypt.py", line 655, in _calc_checksum
+2026-03-24 00:27:41     hash = _bcrypt.hashpw(secret, config)
+2026-03-24 00:27:41            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24 00:27:41 ValueError: password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])
+2026-03-24 00:27:41 ERROR:    Application startup failed. Exiting.
+2026-03-24 00:32:52 POST 404 https://flipbook-backend-cmfkfomz5q-du.a.run.app/login
+2026-03-24 00:32:54 POST 404 https://flipbook-backend-cmfkfomz5q-du.a.run.app/login
+2026-03-24 00:32:54 INFO:     Started server process [1]
+2026-03-24 00:32:54 INFO:     Waiting for application startup.
+2026-03-24 00:32:54 INFO:     Application startup complete.
+2026-03-24 00:32:54 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 00:32:54 INFO:     169.254.169.126:31010 - "POST /login HTTP/1.1" 404 Not Found
+2026-03-24 00:32:54 INFO:     169.254.169.126:31018 - "POST /login HTTP/1.1" 404 Not Found
+2026-03-24 00:33:00 POST 404 https://flipbook-backend-cmfkfomz5q-du.a.run.app/login
+2026-03-24 00:33:00 INFO:     169.254.169.126:42614 - "POST /login HTTP/1.1" 404 Not Found
+2026-03-24 00:34:13 POST 404 https://flipbook-backend-cmfkfomz5q-du.a.run.app/login
+2026-03-24 00:34:13 INFO:     169.254.169.126:50436 - "POST /login HTTP/1.1" 404 Not Found
+2026-03-24 00:38:04 INFO:     Started server process [1]
+2026-03-24 00:38:04 INFO:     Waiting for application startup.
+2026-03-24 00:38:05 INFO:     Application startup complete.
+2026-03-24 00:38:05 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 00:38:15 INFO:     Shutting down
+2026-03-24 00:38:15 INFO:     Waiting for application shutdown.
+2026-03-24 00:38:15 INFO:     Application shutdown complete.
+2026-03-24 00:38:15 INFO:     Finished server process [1]
+2026-03-24 00:39:53 POST 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/login
+2026-03-24 00:39:53 ✅ [Lifespan] Default admin user seeded successfully.
+2026-03-24 00:39:53 INFO:     169.254.169.126:39072 - "POST /login HTTP/1.1" 200 OK
+2026-03-24 00:47:17 POST 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/login
+2026-03-24 00:47:17 INFO:     169.254.169.126:20452 - "POST /login HTTP/1.1" 200 OK
+2026-03-24 00:47:18 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 00:47:18 INFO:     169.254.169.126:20454 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 00:47:23 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071
+2026-03-24 00:47:23 INFO:     169.254.169.126:34704 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071 HTTP/1.1" 200 OK
+2026-03-24 00:47:23 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays
+2026-03-24 00:47:23 INFO:     169.254.169.126:34718 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays HTTP/1.1" 200 OK
+2026-03-24 00:47:29 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 00:47:29 INFO:     169.254.169.126:34724 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 00:58:57 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071
+2026-03-24 00:58:57 INFO:     169.254.169.126:29982 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071 HTTP/1.1" 200 OK
+2026-03-24 00:58:57 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays
+2026-03-24 00:58:57 INFO:     169.254.169.126:29988 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays HTTP/1.1" 200 OK
+2026-03-24 01:12:57 INFO:     Started server process [1]
+2026-03-24 01:12:57 INFO:     Waiting for application startup.
+2026-03-24 01:12:58 INFO:     Application startup complete.
+2026-03-24 01:12:58 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 01:13:03 INFO:     Shutting down
+2026-03-24 01:13:03 INFO:     Waiting for application shutdown.
+2026-03-24 01:13:03 INFO:     Application shutdown complete.
+2026-03-24 01:13:03 INFO:     Finished server process [1]
+2026-03-24 01:17:04 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 01:17:04 INFO:     169.254.169.126:7478 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 01:17:33 POST 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/upload?split_pages=false
+2026-03-24 01:17:33 INFO:     169.254.169.126:31076 - "POST /upload?split_pages=false HTTP/1.1" 200 OK
+2026-03-24 01:17:38 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 01:17:38 Starting PDF conversion: /app/storage/0bb1d5b2-a7d4-4ced-abb7-7380603e4778/original.pdf -> /app/storage/0bb1d5b2-a7d4-4ced-abb7-7380603e4778 (split_pages=False)
+2026-03-24 01:17:38 INFO:     169.254.169.126:31090 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 01:17:41 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 01:17:41 INFO:     169.254.169.126:38266 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 01:17:44 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 01:17:44 INFO:     169.254.169.126:38278 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 01:17:48 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 01:17:48 Successfully converted 20 sheets to 20 individual pages.
+2026-03-24 01:17:48 ✅ [Background] Flipbook-0bb1d5b2-a7d4-4ced-abb7-7380603e4778 Firestore Updated successfully. (20 pages)
+2026-03-24 01:17:48 INFO:     169.254.169.126:38284 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 01:17:50 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778
+2026-03-24 01:17:50 INFO:     169.254.169.126:37094 - "GET /flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778 HTTP/1.1" 200 OK
+2026-03-24 01:17:50 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778/overlays
+2026-03-24 01:17:50 INFO:     169.254.169.126:37098 - "GET /flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778/overlays HTTP/1.1" 200 OK
+2026-03-24 01:18:00 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 01:18:00 INFO:     169.254.169.126:58366 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 01:18:04 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778
+2026-03-24 01:18:04 INFO:     169.254.169.126:58368 - "GET /flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778 HTTP/1.1" 200 OK
+2026-03-24 01:18:04 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778/overlays
+2026-03-24 01:18:04 INFO:     169.254.169.126:58380 - "GET /flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778/overlays HTTP/1.1" 200 OK
+2026-03-24 01:18:12 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778
+2026-03-24 01:18:12 INFO:     169.254.169.126:54442 - "GET /flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778 HTTP/1.1" 200 OK
+2026-03-24 01:18:13 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778/overlays
+2026-03-24 01:18:13 INFO:     169.254.169.126:54456 - "GET /flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778/overlays HTTP/1.1" 200 OK
+2026-03-24 01:24:48 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 01:24:48 INFO:     169.254.169.126:21818 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 01:24:51 DELETE 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/6b0f41b7-1263-4bb3-93f1-eaa21c784e4c
+2026-03-24 01:24:52 INFO:     169.254.169.126:42984 - "DELETE /flipbook/6b0f41b7-1263-4bb3-93f1-eaa21c784e4c HTTP/1.1" 200 OK
+2026-03-24 01:39:58 INFO:     Shutting down
+2026-03-24 01:39:58 INFO:     Waiting for application shutdown.
+2026-03-24 01:39:58 INFO:     Application shutdown complete.
+2026-03-24 01:39:58 INFO:     Finished server process [1]
+2026-03-24 02:07:26 INFO:     Started server process [1]
+2026-03-24 02:07:26 INFO:     Waiting for application startup.
+2026-03-24 02:07:26 INFO:     Application startup complete.
+2026-03-24 02:07:26 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 02:12:13 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 02:12:13 INFO:     169.254.169.126:60228 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 02:12:21 POST 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/login
+2026-03-24 02:12:21 INFO:     169.254.169.126:62238 - "POST /login HTTP/1.1" 200 OK
+2026-03-24 02:12:22 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 02:12:22 INFO:     169.254.169.126:62240 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 02:12:26 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071
+2026-03-24 02:12:26 INFO:     169.254.169.126:50074 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071 HTTP/1.1" 200 OK
+2026-03-24 02:12:26 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays
+2026-03-24 02:12:26 INFO:     169.254.169.126:50088 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays HTTP/1.1" 200 OK
+2026-03-24 02:12:48 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071
+2026-03-24 02:12:48 INFO:     169.254.169.126:20286 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071 HTTP/1.1" 200 OK
+2026-03-24 02:12:48 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays
+2026-03-24 02:12:49 INFO:     169.254.169.126:20296 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays HTTP/1.1" 200 OK
+2026-03-24 02:12:53 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 02:12:53 INFO:     169.254.169.126:20308 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 02:12:57 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778
+2026-03-24 02:12:57 INFO:     169.254.169.126:38602 - "GET /flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778 HTTP/1.1" 200 OK
+2026-03-24 02:12:57 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778/overlays
+2026-03-24 02:12:57 INFO:     169.254.169.126:38612 - "GET /flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778/overlays HTTP/1.1" 200 OK
+2026-03-24 02:12:59 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 02:12:59 INFO:     169.254.169.126:38626 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 02:27:59 INFO:     Shutting down
+2026-03-24 02:28:00 INFO:     Waiting for application shutdown.
+2026-03-24 02:28:00 INFO:     Application shutdown complete.
+2026-03-24 02:28:00 INFO:     Finished server process [1]
+2026-03-24 02:55:45 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071
+2026-03-24 02:55:47 INFO:     Started server process [1]
+2026-03-24 02:55:47 INFO:     Waiting for application startup.
+2026-03-24 02:55:48 INFO:     Application startup complete.
+2026-03-24 02:55:48 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 02:55:48 INFO:     169.254.169.126:32898 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071 HTTP/1.1" 200 OK
+2026-03-24 02:55:48 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays
+2026-03-24 02:55:48 INFO:     169.254.169.126:32910 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays HTTP/1.1" 200 OK
+2026-03-24 03:10:49 INFO:     Shutting down
+2026-03-24 03:10:50 INFO:     Waiting for application shutdown.
+2026-03-24 03:10:50 INFO:     Application shutdown complete.
+2026-03-24 03:10:50 INFO:     Finished server process [1]
+2026-03-24 03:16:21 POST 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/login
+2026-03-24 03:16:23 INFO:     Started server process [1]
+2026-03-24 03:16:23 INFO:     Waiting for application startup.
+2026-03-24 03:16:23 INFO:     Application startup complete.
+2026-03-24 03:16:23 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 03:16:24 INFO:     169.254.169.126:18840 - "POST /login HTTP/1.1" 200 OK
+2026-03-24 03:16:24 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 03:16:24 INFO:     169.254.169.126:11444 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 03:31:30 INFO:     Shutting down
+2026-03-24 03:31:30 INFO:     Waiting for application shutdown.
+2026-03-24 03:31:30 INFO:     Application shutdown complete.
+2026-03-24 03:31:30 INFO:     Finished server process [1]
+2026-03-24 03:52:28 INFO:     Started server process [1]
+2026-03-24 03:52:28 INFO:     Waiting for application startup.
+2026-03-24 03:52:28 INFO:     Application startup complete.
+2026-03-24 03:52:28 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 03:54:19 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 03:54:19 INFO:     169.254.169.126:43502 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 03:54:28 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071
+2026-03-24 03:54:28 INFO:     169.254.169.126:61088 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071 HTTP/1.1" 200 OK
+2026-03-24 03:54:29 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays
+2026-03-24 03:54:29 INFO:     169.254.169.126:61092 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays HTTP/1.1" 200 OK
+2026-03-24 03:54:32 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 03:54:32 INFO:     169.254.169.126:61108 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 03:55:30 POST 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/login
+2026-03-24 03:55:31 INFO:     169.254.169.126:27894 - "POST /login HTTP/1.1" 200 OK
+2026-03-24 03:55:31 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 03:55:31 INFO:     169.254.169.126:27898 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 03:55:47 DELETE 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778
+2026-03-24 03:55:48 INFO:     169.254.169.126:64102 - "DELETE /flipbook/0bb1d5b2-a7d4-4ced-abb7-7380603e4778 HTTP/1.1" 200 OK
+2026-03-24 03:56:29 POST 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/upload?split_pages=true
+2026-03-24 03:56:29 INFO:     169.254.169.126:60808 - "POST /upload?split_pages=true HTTP/1.1" 200 OK
+2026-03-24 03:56:35 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 03:56:35 Processing pages 1 to 5 / 20...
+2026-03-24 03:56:35 Processing pages 6 to 10 / 20...
+2026-03-24 03:56:35 Processing pages 11 to 15 / 20...
+2026-03-24 03:56:35 INFO:     169.254.169.126:11416 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 03:56:38 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 03:56:39 Processing pages 16 to 20 / 20...
+2026-03-24 03:56:39 INFO:     169.254.169.126:11428 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 03:56:42 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 03:56:42 Successfully converted 20 sheets to 40 individual pages.
+2026-03-24 03:56:42 ✅ [Background] Flipbook-2ed33d19-f0bf-4e92-bef2-d88810fdef15 Firestore Updated successfully. (40 pages)
+2026-03-24 03:56:42 INFO:     169.254.169.126:11442 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 03:56:45 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/2ed33d19-f0bf-4e92-bef2-d88810fdef15
+2026-03-24 03:56:45 INFO:     169.254.169.126:43260 - "GET /flipbook/2ed33d19-f0bf-4e92-bef2-d88810fdef15 HTTP/1.1" 200 OK
+2026-03-24 03:56:45 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/2ed33d19-f0bf-4e92-bef2-d88810fdef15/overlays
+2026-03-24 03:56:45 INFO:     169.254.169.126:43270 - "GET /flipbook/2ed33d19-f0bf-4e92-bef2-d88810fdef15/overlays HTTP/1.1" 200 OK
+2026-03-24 03:56:54 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 03:56:54 INFO:     169.254.169.126:29340 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 03:58:46 INFO:     Started server process [1]
+2026-03-24 03:58:46 INFO:     Waiting for application startup.
+2026-03-24 03:58:46 INFO:     Application startup complete.
+2026-03-24 03:58:46 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 03:58:53 INFO:     Shutting down
+2026-03-24 03:58:53 INFO:     Waiting for application shutdown.
+2026-03-24 03:58:53 INFO:     Application shutdown complete.
+2026-03-24 03:58:53 INFO:     Finished server process [1]
+2026-03-24 04:00:01 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 04:00:01 INFO:     169.254.169.126:41918 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 04:03:05 INFO:     Started server process [1]
+2026-03-24 04:03:05 INFO:     Waiting for application startup.
+2026-03-24 04:03:05 INFO:     Application startup complete.
+2026-03-24 04:03:05 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 04:03:09 INFO:     Shutting down
+2026-03-24 04:03:10 INFO:     Waiting for application shutdown.
+2026-03-24 04:03:10 INFO:     Application shutdown complete.
+2026-03-24 04:03:10 INFO:     Finished server process [1]
+2026-03-24 04:18:06 INFO:     Shutting down
+2026-03-24 04:18:06 INFO:     Waiting for application shutdown.
+2026-03-24 04:18:06 INFO:     Application shutdown complete.
+2026-03-24 04:18:06 INFO:     Finished server process [1]
+2026-03-24 04:20:27 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 04:20:31 INFO:     Started server process [1]
+2026-03-24 04:20:31 INFO:     Waiting for application startup.
+2026-03-24 04:20:31 INFO:     Application startup complete.
+2026-03-24 04:20:31 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 04:20:31 INFO:     169.254.169.126:34444 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 04:20:34 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071
+2026-03-24 04:20:34 INFO:     169.254.169.126:34450 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071 HTTP/1.1" 200 OK
+2026-03-24 04:20:34 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays
+2026-03-24 04:20:34 INFO:     169.254.169.126:34454 - "GET /flipbook/59eec1ad-ec1b-4db3-9078-bae34d8e9071/overlays HTTP/1.1" 200 OK
+2026-03-24 04:20:38 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 04:20:38 INFO:     169.254.169.126:54310 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 04:31:00 INFO:     Started server process [1]
+2026-03-24 04:31:00 INFO:     Waiting for application startup.
+2026-03-24 04:31:01 INFO:     Application startup complete.
+2026-03-24 04:31:01 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 04:31:07 INFO:     Shutting down
+2026-03-24 04:31:07 INFO:     Waiting for application shutdown.
+2026-03-24 04:31:07 INFO:     Application shutdown complete.
+2026-03-24 04:31:07 INFO:     Finished server process [1]
+2026-03-24 04:34:56 INFO:     Started server process [1]
+2026-03-24 04:34:56 INFO:     Waiting for application startup.
+2026-03-24 04:34:56 INFO:     Application startup complete.
+2026-03-24 04:34:56 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 04:35:05 INFO:     Shutting down
+2026-03-24 04:35:05 INFO:     Waiting for application shutdown.
+2026-03-24 04:35:05 INFO:     Application shutdown complete.
+2026-03-24 04:35:05 INFO:     Finished server process [1]
+2026-03-24 04:49:40 INFO:     Started server process [1]
+2026-03-24 04:49:40 INFO:     Waiting for application startup.
+2026-03-24 04:49:40 INFO:     Application startup complete.
+2026-03-24 04:49:40 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 04:49:45 INFO:     Shutting down
+2026-03-24 04:49:45 INFO:     Waiting for application shutdown.
+2026-03-24 04:49:45 INFO:     Application shutdown complete.
+2026-03-24 04:49:45 INFO:     Finished server process [1]
+2026-03-24 05:04:44 INFO:     Shutting down
+2026-03-24 05:04:44 INFO:     Waiting for application shutdown.
+2026-03-24 05:04:44 INFO:     Application shutdown complete.
+2026-03-24 05:04:44 INFO:     Finished server process [1]
+2026-03-24 05:16:18 INFO:     Started server process [1]
+2026-03-24 05:16:18 INFO:     Waiting for application startup.
+2026-03-24 05:16:18 INFO:     Application startup complete.
+2026-03-24 05:16:18 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 05:31:20 INFO:     Shutting down
+2026-03-24 05:31:20 INFO:     Waiting for application shutdown.
+2026-03-24 05:31:20 INFO:     Application shutdown complete.
+2026-03-24 05:31:20 INFO:     Finished server process [1]
+2026-03-24 05:34:28 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 05:34:30 INFO:     Started server process [1]
+2026-03-24 05:34:30 INFO:     Waiting for application startup.
+2026-03-24 05:34:30 INFO:     Application startup complete.
+2026-03-24 05:34:30 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 05:34:30 INFO:     169.254.169.126:42894 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 05:49:40 INFO:     Shutting down
+2026-03-24 05:49:40 INFO:     Waiting for application shutdown.
+2026-03-24 05:49:40 INFO:     Application shutdown complete.
+2026-03-24 05:49:40 INFO:     Finished server process [1]
+2026-03-24 06:02:49 INFO:     Started server process [1]
+2026-03-24 06:02:49 INFO:     Waiting for application startup.
+2026-03-24 06:02:50 INFO:     Application startup complete.
+2026-03-24 06:02:50 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 06:13:42 INFO:     Started server process [1]
+2026-03-24 06:13:42 INFO:     Waiting for application startup.
+2026-03-24 06:13:42 INFO:     Application startup complete.
+2026-03-24 06:13:42 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 06:13:48 INFO:     Shutting down
+2026-03-24 06:13:48 INFO:     Waiting for application shutdown.
+2026-03-24 06:13:48 INFO:     Application shutdown complete.
+2026-03-24 06:13:48 INFO:     Finished server process [1]
+2026-03-24 06:28:11 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 06:28:11 INFO:     169.254.169.126:36238 - "GET /flipbooks HTTP/1.1" 200 OK

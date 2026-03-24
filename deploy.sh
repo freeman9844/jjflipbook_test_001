@@ -29,6 +29,9 @@ $GCLOUD_PATH run deploy flipbook-backend \
   --memory=2Gi \
   --cpu=2 \
   --no-cpu-throttling \
+  --network=jwlee-vpc-001 \
+  --subnet=jwlee-vpc-001 \
+  --vpc-egress=all-traffic \
   --ingress=internal
 
 # 백엔드 URL 추출

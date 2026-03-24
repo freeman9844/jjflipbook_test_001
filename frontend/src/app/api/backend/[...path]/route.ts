@@ -14,9 +14,16 @@ export async function GET(
 
     try {
         const res = await fetch(url);
-        const data = await res.json();
+        const responseContentType = res.headers.get('content-type') || '';
+        let data;
+        if (responseContentType.includes('application/json')) {
+            data = await res.json();
+        } else {
+            data = { message: await res.text() };
+        }
         return NextResponse.json(data, { status: res.status });
     } catch (error: any) {
+        console.error(`[Proxy GET Error] ${url}:`, error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
@@ -76,9 +83,16 @@ export async function DELETE(
             method: 'DELETE',
             headers: { 'X-API-Key': process.env.INTERNAL_API_KEY || 'secret_dev_key' }
         });
-        const data = await res.json();
+        const responseContentType = res.headers.get('content-type') || '';
+        let data;
+        if (responseContentType.includes('application/json')) {
+            data = await res.json();
+        } else {
+            data = { message: await res.text() };
+        }
         return NextResponse.json(data, { status: res.status });
     } catch (error: any) {
+        console.error(`[Proxy DELETE Error] ${url}:`, error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

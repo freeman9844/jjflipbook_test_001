@@ -9,8 +9,13 @@ import json
 from pdf_utils import convert_pdf_to_images
 from models import User, Flipbook, Overlay
 
-from passlib.context import CryptContext
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 # Google Cloud Storage 및 Firestore 이니셜라이징
 from google.cloud import storage, firestore
@@ -36,7 +41,7 @@ async def lifespan(app: FastAPI):
         admin_password = os.getenv("ADMIN_PASSWORD", "admin")
         admin_user = User(
             username="admin",
-            password_hash=pwd_context.hash(admin_password)
+            password_hash=hash_password(admin_password)
         )
         user_ref.set(admin_user.dict())
         print("✅ [Lifespan] Default admin user seeded successfully.")
@@ -74,7 +79,7 @@ def login(req: LoginRequest):
         raise HTTPException(status_code=401, detail="존재하지 않는 사용자입니다.")
         
     user_data = doc.to_dict()
-    if not pwd_context.verify(req.password, user_data.get("password_hash")):
+    if not verify_password(req.password, user_data.get("password_hash")):
         raise HTTPException(status_code=401, detail="비밀번호가 일치하지 않습니다.")
         
     return {"status": "ok", "authenticated": True, "username": req.username}

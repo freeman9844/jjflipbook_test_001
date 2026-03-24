@@ -1,0 +1,18 @@
+2026-03-24 06:28:11 GET 200 https://flipbook-backend-cmfkfomz5q-du.a.run.app/flipbooks
+2026-03-24 06:28:11 INFO:     169.254.169.126:36238 - "GET /flipbooks HTTP/1.1" 200 OK
+2026-03-24 06:33:24 INFO:     Started server process [1]
+2026-03-24 06:33:24 INFO:     Waiting for application startup.
+2026-03-24 06:33:24 INFO:     Application startup complete.
+2026-03-24 06:33:24 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 06:33:34 INFO:     Shutting down
+2026-03-24 06:33:34 INFO:     Waiting for application shutdown.
+2026-03-24 06:33:34 INFO:     Application shutdown complete.
+2026-03-24 06:33:34 INFO:     Finished server process [1]
+2026-03-24 06:45:44 INFO:     Started server process [1]
+2026-03-24 06:45:44 INFO:     Waiting for application startup.
+2026-03-24 06:45:44 INFO:     Application startup complete.
+2026-03-24 06:45:44 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-03-24 06:45:55 INFO:     Shutting down
+2026-03-24 06:45:55 INFO:     Waiting for application shutdown.
+2026-03-24 06:45:55 INFO:     Application shutdown complete.
+2026-03-24 06:45:55 INFO:     Finished server process [1]

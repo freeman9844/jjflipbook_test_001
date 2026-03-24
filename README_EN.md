@@ -2,13 +2,13 @@
 
 # 📖 JJFlipBook - PDF Flipbook Viewer Service
 
-An application to upload PDF documents and view them in a **3D Flipbook (Page Flip)** format that feels like turning a real book on a web browser.
+An application to upload PDF documents and view them in a **3D Flipbook (Page Flip)** format that feels like turning a real book on a web browser. Built on Next.js frontend, FastAPI backend, and Google Cloud's serverless architecture.
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Overall Architecture
 
-This project is a serverless multi-tier application built using **Next.js frontend**, **FastAPI backend**, and **Google Cloud infrastructure**.
+This project is a multi-layer serverless application powered massively by the Google Cloud Platform infrastructure.
 
 | Layer | Tech Stack / Usage |
 | :--- | :--- |
@@ -22,7 +22,7 @@ This project is a serverless multi-tier application built using **Next.js fronte
 
 ## 🏃 Local Execution Guide
 
-Refer to the guide below to run the application in a local or offline environment.
+Refer to the guide below to run the application securely in a local shell.
 
 ### 1. Backend (FastAPI) Startup
 ```bash
@@ -54,19 +54,19 @@ npm run dev
 
 ## 🚀 Google Cloud Run One-Click Deployment
 
-Using the shell script (`deploy.sh`) included in this project, you can build Artifact Registry images and deploy to Cloud Run with automatic chaining.
+Using the shell script (`deploy.sh`) included in this project, you can build Artifact Registry images and deploy to Cloud Run securely.
 
 ```bash
 # Run from the workspace root directory
 ./deploy.sh
 ```
 
-### 💡 Key Environment Variables (Auto-injected by `deploy.sh`)
-*   `NEXT_PUBLIC_BACKEND_URL`: Injected during static build to point the frontend to the backend endpoint.
-*   `GOOGLE_CLOUD_PROJECT`: Used by Cloud Storage and Firestore SDKs to identify the GCP project.
+### 💡 Key Environment Variables
+*   `NEXT_PUBLIC_BACKEND_URL`: Injected during static build to point the frontend to the backend endpoint natively without CORS delays.
+*   `GOOGLE_CLOUD_PROJECT`: Used by Cloud Storage and Firestore SDKs to identify the GCP project origins.
 
 > [!IMPORTANT]
-> **Cloud Run Memory & CPU Allocation**: PDF conversion may consume large RAM workloads if page numbers are high. To maintain robust availability without OOM restarts or CPU freezing, `--memory=2Gi` and `--no-cpu-throttling` configurations are included by default inside `deploy.sh` node setup!
+> **Cloud Run Memory & CPU Allocation**: PDF conversion may consume large RAM workloads. To maintain robust availability without OOM restarts, `--memory=2Gi` and `--no-cpu-throttling` configurations are included securely inside `deploy.sh`!
 
 ---
 
@@ -88,45 +88,74 @@ Using the shell script (`deploy.sh`) included in this project, you can build Art
 └── deploy.sh              # One-click Cloud Run deploy automation script
 ```
 
+## 🚀 OOM Prevention & Asynchronous Performance
+
+Designed to intercept server crashes and out-of-memory cascades during enormous PDF processing procedures.
+
+### 1. Chunked PDF Processing
+*   **Memory Spike Mitigation**: Prevents RAM spikes by parsing large PDFs sequentially in smart **5-Page Chunks** rather than dumping the whole blob.
+*   **Multiprocessing**: Spawns multiple physical decoding cores utilizing `thread_count=4` inside `pdf2image` arrays.
+
+### 2. End-to-End Streaming Transports
+*   **Frontend-Proxy Relay**: Streaming API intercepts utilizing `duplex: 'half'` policies, entirely removing buffering overlaps inside the Node layer.
+*   **Backend Streaming Sink**: Writing chunks via `shutil.copyfileobj` pipelines bypasses RAM allocations gracefully.
+*   **Concurrent Upload Pools**: Leveraged `ThreadPoolExecutor` bindings to upload parallel arrays (up to 5 workers) directly towards the unified GCS storage bucket seamlessly.
+
 ---
 
-## ☁️ Google Cloud Architecture Diagram
+## 🔒 Direct VPC Security & Internal Call Networking
+
+Security-hardened configurations isolating architecture boundaries completely.
+
+### 1. Direct VPC Egress & Next.js API Routes Proxy
+Blocks immediate REST vulnerability points from Internet gateways.
+*   **Proxy Relay**: Requests do not trigger straight external links; `FE Server (Node.js)` overrides Proxy configurations securely. (`/api/backend/*`)
+*   **Internal Ingress**: `Backend Cloud Run` invokes via `--ingress=internal`, completely shutting off remote anonymous scans.
+*   **Direct VPC Egress**: Both layers correspond across identical Virtual Private networks(`jwlee-vpc-001`) preventing explicit escape vectors via `--vpc-egress=all-traffic`.
+
+### 2. Private DNS Configuration
+*   We forcibly forged a robust Private DNS Zone masking `.run.app` inside the VPC perimeter. Traffic loops locally targeting the `199.36.153.8` (Private Google Access VIP) instead of failing externally into the `ERROR_INGRESS_TRAFFIC_DISALLOWED` exception handler!
+
+### 3. API Guards
+*   Secured REST channels with persistent `verify_api_key` middlewares. Structural deformations like deletions require header verifications implicitly.
+
+---
+
+## 🔑 Authentication Restructuring (Admin Core)
+
+Robust session controls implementing local tokens securely.
+*   **Admin Auto Seeding**: The `admin` account is seeded strictly during system lifespan bindings.
+*   **Bcrypt Encryption Overhaul**: Upgraded the algorithm by completely stripping legacy `passlib` exceptions and replacing them manually executing intrinsic `bcrypt` validations securing hash collisions securely.
+*   **React State Parity**: Client-side hook instances now synchronize with unified global generic loops bypassing overlapping component bugs reliably.
+
+---
+
+## 🛠️ Client React Hydration Fixes (Stability)
+
+*   **SSR Crash Prevention**: Removed raw DOM invocations scaling global animations. Repositioned elements securely inside nested `useEffect` sandboxes dropping `This page couldn't load` crashes.
+*   **React Error #310 Hooks Enforcement**: Rearranged Early Return conditional architectures completely ensuring robust React DOM component lifecycle states. Fixed unexpected unmount/mount Hooks sequential disruptions.
+
+---
+
+## ☁️ Google Cloud Architecture Diagram (Mermaid)
 
 ```mermaid
 graph TD
-    User([User / Web Browser]) -->|1. HTTPS Request| FE_Run["Frontend (Next.js) <br> Cloud Run"];
+    User([User / Web Browser]) -->|1. HTTPS Request| FE_Run["Frontend <br> Cloud Run"];
     
     subgraph VPC ["VPC Private Network (Direct VPC Egress)"]
-        FE_Run -->|2. Proxy API Relay| BE_Run["Backend (FastAPI) <br> Cloud Run <br> (Ingress: Internal)"];
+        FE_Run -->|2. Proxy API Relay| BE_Run["Backend <br> Cloud Run <br> (Ingress: Internal)"];
     end
     
     subgraph Google Cloud Platform
-        BE_Run -->|3. Split PDF to Images| Poppler["Poppler-utils <br> (Built-in)"];
-        BE_Run -->|4. Save Original / Converted Images| GCS[("Cloud Storage <br> Image Bucket")];
-        BE_Run -->|5. Save Meta / Overlays| Firestore[("Cloud Firestore <br> NoSQL DB")];
-        
-        GCS -.->|6. Direct Image Loading| User;
+        BE_Run -->|3. Split PDF to Images| Poppler["Poppler <br> (Built-in Docker)"];
+        BE_Run -->|4. Store Outputs| GCS[("Cloud Storage Bucket")];
+        BE_Run -->|5. Store Objects| Firestore[("Cloud Firestore")];
+        GCS -.->|6. Direct Blob Loading| User;
     end
 
     style FE_Run fill:#e8f0fe,stroke:#1a73e8,stroke-width:2px
     style BE_Run fill:#e8f0fe,stroke:#1a73e8,stroke-width:2px
     style GCS fill:#e6f4ea,stroke:#1e8e3e,stroke-width:2px
     style Firestore fill:#e6f4ea,stroke:#1e8e3e,stroke-width:2px
-```
-
----
-
-## 🔒 Direct VPC Internal Call & Responsive UI Upgrades
-
-With recent patches, **security-hardened internal routing** and **mobile screen fitting** are fully integrated.
-
-### 1. Mobile Responsive UI Fix
-*   **Dashboard**: Sidebar breaks into a **top horizontal menu bar** dynamically for vertical responsive stacking.
-*   **Flipbook Viewer**: **Hides the sidebar completely (`display: none`)** to consume maximizing reading screen widths, recalculating scale dimensions effectively.
-
-### 2. Direct VPC Egress & Next.js API Routes Proxy
-Locks outbound connections securely inside closed boundaries network.
-*   **Proxy Relay**: Requests do not trigger straight into Absolute URLs; `FE Server (Node.js)` triggers Proxy forward nodes. (`/api/backend/*`)
-*   **Internal Ingress**: `Backend Cloud Run` is launched with `--ingress=internal`, completely shutting off external internet pokes.
-*   **Direct VPC Egress**: Frontend communicates private channels with `--vpc-egress=all-traffic` parameters targeting only internal backbone layouts.
 ```

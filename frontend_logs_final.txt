@@ -1,0 +1,35 @@
+2026-03-24 06:47:59 GET 200 https://flipbook-frontend-904902969656.asia-northeast3.run.app/_next/static/chunks/turbopack-0qwbp_m9xp5eu.js
+2026-03-24 06:47:59 GET 200 https://flipbook-frontend-904902969656.asia-northeast3.run.app/_next/static/chunks/0d3tkj33oycf2.js
+2026-03-24 06:47:59 GET 200 https://flipbook-frontend-904902969656.asia-northeast3.run.app/_next/static/chunks/0r0rm_b0g0lfy.js
+2026-03-24 06:48:00 GET 200 https://flipbook-frontend-904902969656.asia-northeast3.run.app/favicon.ico?favicon.0x3dzn~oxb6tn.ico
+2026-03-24 06:48:06 GET 200 https://flipbook-frontend-904902969656.asia-northeast3.run.app/?
+2026-03-24 06:48:14 GET 304 https://flipbook-frontend-904902969656.asia-northeast3.run.app/
+2026-03-24 07:02:42 ▲ Next.js 16.2.1
+2026-03-24 07:02:42 - Local:         http://localhost:8080
+2026-03-24 07:02:42 - Network:       http://0.0.0.0:8080
+2026-03-24 07:02:42 ✓ Ready in 0ms
+2026-03-24 07:05:14 GET 200 https://flipbook-frontend-904902969656.asia-northeast3.run.app/
+2026-03-24 07:05:14 GET 200 https://flipbook-frontend-904902969656.asia-northeast3.run.app/_next/static/chunks/0qd5-sbe94coz.js
+2026-03-24 07:05:14 GET 200 https://flipbook-frontend-904902969656.asia-northeast3.run.app/_next/static/chunks/0r0rm_b0g0lfy.js
+2026-03-24 07:09:35 ▲ Next.js 16.2.1
+2026-03-24 07:09:35 - Local:         http://localhost:8080
+2026-03-24 07:09:35 - Network:       http://0.0.0.0:8080
+2026-03-24 07:09:35 ✓ Ready in 0ms
+2026-03-24 07:09:51 GET 200 https://flipbook-frontend-904902969656.asia-northeast3.run.app/
+2026-03-24 07:09:53 GET 304 https://flipbook-frontend-904902969656.asia-northeast3.run.app/
+2026-03-24 07:10:07 GET 304 https://flipbook-frontend-904902969656.asia-northeast3.run.app/
+2026-03-24 07:10:25 GET 200 https://flipbook-frontend-cmfkfomz5q-du.a.run.app/
+2026-03-24 07:10:25 GET 200 https://flipbook-frontend-cmfkfomz5q-du.a.run.app/_next/static/chunks/0qd5-sbe94coz.js
+2026-03-24 07:10:25 GET 200 https://flipbook-frontend-cmfkfomz5q-du.a.run.app/_next/static/chunks/0r0rm_b0g0lfy.js
+2026-03-24 07:10:27 GET 304 https://flipbook-frontend-904902969656.asia-northeast3.run.app/
+2026-03-24 07:10:30 GET 200 https://flipbook-frontend-904902969656.asia-northeast3.run.app/?
+2026-03-24 07:11:30 GET 200 https://flipbook-frontend-cmfkfomz5q-du.a.run.app/
+2026-03-24 07:11:30 GET 200 https://flipbook-frontend-cmfkfomz5q-du.a.run.app/_next/static/chunks/0r0rm_b0g0lfy.js
+2026-03-24 07:11:30 GET 200 https://flipbook-frontend-cmfkfomz5q-du.a.run.app/_next/static/chunks/0qd5-sbe94coz.js
+2026-03-24 07:11:31 GET 200 https://flipbook-frontend-cmfkfomz5q-du.a.run.app/favicon.ico?favicon.0x3dzn~oxb6tn.ico
+2026-03-24 07:11:31 GET 200 https://flipbook-frontend-cmfkfomz5q-du.a.run.app/favicon.ico?favicon.0x3dzn~oxb6tn.ico
+2026-03-24 07:11:42 GET 200 https://flipbook-frontend-cmfkfomz5q-du.a.run.app/?
+2026-03-24 07:11:57 GET 404 https://flipbook-frontend-cmfkfomz5q-du.a.run.app/login
+2026-03-24 07:12:07 GET 304 https://flipbook-frontend-cmfkfomz5q-du.a.run.app/
+2026-03-24 07:14:36 GET 404 https://flipbook-frontend-cmfkfomz5q-du.a.run.app/frontend/src/app/api/backend/[
+2026-03-24 07:14:42 GET 404 https://flipbook-frontend-cmfkfomz5q-du.a.run.app/frontend/src/app/api/bacend

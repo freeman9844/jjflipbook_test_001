@@ -3,26 +3,30 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
+const styles: Record<string, React.CSSProperties> = {
+    loginContainer: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', width: '100vw', backgroundColor: '#f4f6f8' },
+    loginForm: { backgroundColor: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)', width: '340px', display: 'flex', flexDirection: 'column', gap: '12px', boxSizing: 'border-box' },
+    loginInput: { padding: '12px 16px', borderRadius: '8px', border: '1px solid #dadce0', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s', width: '100%', boxSizing: 'border-box' },
+    loginBtn: { padding: '12px', backgroundColor: '#1a73e8', color: 'white', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s', marginTop: '8px', width: '100%' }
+};
+
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
-    const [id, setId] = useState("");
+    const [loginId, setLoginId] = useState("");
     const [password, setPassword] = useState("");
     const [loginError, setLoginError] = useState("");
     const pathname = usePathname();
 
     useEffect(() => {
-        // 클라이언트 사이드 판별
-        const auth = localStorage.getItem("isAuthenticated");
-        if (auth === "true") {
-            setIsLoggedIn(true);
-        } else {
-            setIsLoggedIn(false);
+        if (typeof window !== "undefined") {
+            const auth = localStorage.getItem("isAuthenticated");
+            setIsLoggedIn(auth === "true");
         }
     }, []);
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
-        if (id === "admin" && password === "admin") {
+        if (loginId === "admin" && password === "admin") {
             localStorage.setItem("isAuthenticated", "true");
             setIsLoggedIn(true);
             setLoginError("");
@@ -39,7 +43,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         );
     }
 
-    const isPublicRoute = pathname.startsWith("/view/");
+    const isPublicRoute = pathname?.startsWith("/view/") || false;
 
     if (!isLoggedIn && !isPublicRoute) {
         return (
@@ -48,7 +52,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
                     <h2 style={{ marginBottom: '4px', textAlign: 'center', color: '#1a1a1a', fontWeight: 'bold' }}>JJFlipBook 로그인</h2>
                     <p style={{ margin: '0 0 20px 0', textAlign: 'center', fontSize: '13px', color: '#5f6368' }}>관리자 계정으로 로그인해 주세요.</p>
                     {loginError && <div style={{ color: '#e11d48', fontSize: '13px', marginBottom: '12px', textAlign: 'center', backgroundColor: '#fef2f2', padding: '8px', borderRadius: '6px' }}>{loginError}</div>}
-                    <input type="text" placeholder="아이디" value={id} onChange={(e) => setId(e.target.value)} style={styles.loginInput} required />
+                    <input type="text" placeholder="아이디" value={loginId} onChange={(e) => setLoginId(e.target.value)} style={styles.loginInput} required />
                     <input type="password" placeholder="비밀번호" value={password} onChange={(e) => setPassword(e.target.value)} style={styles.loginInput} required />
                     <button type="submit" style={styles.loginBtn}>로그인</button>
                     <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '12px', color: '#9aa0a6' }}>id: admin / pw: admin</div>
@@ -60,9 +64,3 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
 }
 
-const styles: Record<string, React.CSSProperties> = {
-    loginContainer: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', width: '100vw', backgroundColor: '#f4f6f8' },
-    loginForm: { backgroundColor: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)', width: '340px', display: 'flex', flexDirection: 'column', gap: '12px', boxSizing: 'border-box' },
-    loginInput: { padding: '12px 16px', borderRadius: '8px', border: '1px solid #dadce0', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s', width: '100%', boxSizing: 'border-box' },
-    loginBtn: { padding: '12px', backgroundColor: '#1a73e8', color: 'white', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s', marginTop: '8px', width: '100%' }
-};

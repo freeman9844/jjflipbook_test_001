@@ -30,7 +30,7 @@ export default function Home() {
 
     useEffect(() => {
         if (typeof window !== "undefined") {
-            setIsAuthenticated(localStorage.getItem("authenticated") === "true");
+            setIsAuthenticated(localStorage.getItem("isAuthenticated") === "true");
             setIsMounted(true);
         }
     }, []);
@@ -44,7 +44,18 @@ export default function Home() {
         }
     }, []);
 
-    if (!isMounted) return null;
+    useEffect(() => {
+        // 키프레임 스피너 주입을 위한 CSS Injection 헥 (Effect 내부에서 실행하여 SSR 대응)
+        if (typeof document !== 'undefined') {
+            const styleId = "spin-animation-style";
+            if (!document.getElementById(styleId)) {
+                const styleSheet = document.createElement("style");
+                styleSheet.id = styleId;
+                styleSheet.innerText = `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
+                document.head.appendChild(styleSheet);
+            }
+        }
+    }, []);
 
     const isMobile = windowWidth < 768;
     const styles = getStyles(isMobile);
@@ -80,7 +91,7 @@ export default function Home() {
         try {
             const res = await fetch(`/api/backend/flipbooks`);
             if (res.ok) {
-                const data = await res.json();
+                const data: Flipbook[] = await res.json();
                 const sortedData = data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
                 setBooks(sortedData);
             }
@@ -152,7 +163,7 @@ export default function Home() {
                 body: JSON.stringify({ username, password })
             });
             if (res.ok) {
-                localStorage.setItem("authenticated", "true");
+                localStorage.setItem("isAuthenticated", "true");
                 setIsAuthenticated(true);
             } else {
                 alert("❌ 로그인 정보가 일치하지 않습니다.");
@@ -161,6 +172,8 @@ export default function Home() {
             alert("❌ 로그인 처리 중 통신 오류가 발생했습니다.");
         }
     };
+
+    if (!isMounted) return null;
 
     if (!isAuthenticated) {
         return (
@@ -201,7 +214,7 @@ export default function Home() {
                     <button style={styles.sidebarTab} onClick={() => alert("개별 Flipbook의 View 버튼을 눌러주세요.")}>View</button>
                     <button 
                         style={{ ...styles.sidebarTab, marginTop: 'auto', color: '#e11d48', fontWeight: 600 }} 
-                        onClick={() => { localStorage.removeItem("authenticated"); setIsAuthenticated(false); }}
+                        onClick={() => { localStorage.removeItem("isAuthenticated"); setIsAuthenticated(false); }}
                     >
                         🚪 로그아웃
                     </button>
@@ -380,11 +393,4 @@ const getStyles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     loginInput: { padding: '12px 16px', borderRadius: '8px', border: '1px solid #dadce0', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s', width: '100%', boxSizing: 'border-box' },
     loginBtn: { padding: '12px', backgroundColor: '#1a73e8', color: 'white', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', transition: 'background-color 0.2s', marginTop: '8px', width: '100%' }
 });
-
-// 키프레임 스피너 주입을 위한 CSS Injection 헥
-if (typeof document !== 'undefined') {
-    const styleSheet = document.createElement("style");
-    styleSheet.innerText = `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
-    document.head.appendChild(styleSheet);
-}
 
