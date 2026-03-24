@@ -15,6 +15,7 @@ interface Flipbook {
 
 export default function Home() {
     const [books, setBooks] = useState<Flipbook[]>([]);
+    const [isMounted, setIsMounted] = useState<boolean>(false);
     const [uploading, setUploading] = useState(false);
     const [deletingUuid, setDeletingUuid] = useState<string | null>(null); // 변경
     const [splitPages, setSplitPages] = useState<boolean>(true); // 추가: 페이지 분할 여부
@@ -30,6 +31,7 @@ export default function Home() {
     useEffect(() => {
         if (typeof window !== "undefined") {
             setIsAuthenticated(localStorage.getItem("authenticated") === "true");
+            setIsMounted(true);
         }
     }, []);
 
@@ -41,6 +43,8 @@ export default function Home() {
             return () => window.removeEventListener('resize', handleResize);
         }
     }, []);
+
+    if (!isMounted) return null;
 
     const isMobile = windowWidth < 768;
     const styles = getStyles(isMobile);
@@ -77,7 +81,8 @@ export default function Home() {
             const res = await fetch(`/api/backend/flipbooks`);
             if (res.ok) {
                 const data = await res.json();
-                setBooks(data);
+                const sortedData = data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                setBooks(sortedData);
             }
         } catch (err) {
             console.error("도서 목록을 불러오지 못했습니다.", err);
@@ -301,7 +306,7 @@ export default function Home() {
                                     <div style={styles.cardInfo}>
                                         <h4 style={styles.cardTitle}>{book.title}</h4>
                                         <p style={styles.cardSub}>
-                                            {isProcessing ? "분석 중..." : `페이지 수: ${book.page_count}p`}
+                                            {isProcessing ? "분석 중..." : `${book.created_at ? book.created_at.split('T')[0].replace(/-/g, '/') : ''} | 페이지 수: ${book.page_count}p`}
                                         </p>
                                     </div>
                                 </div>

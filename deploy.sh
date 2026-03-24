@@ -27,6 +27,7 @@ $GCLOUD_PATH run deploy flipbook-backend \
   --region $REGION \
   --allow-unauthenticated \
   --memory=2Gi \
+  --cpu=2 \
   --no-cpu-throttling \
   --ingress=internal
 

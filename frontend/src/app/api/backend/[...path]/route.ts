@@ -33,27 +33,28 @@ export async function POST(
 
     try {
         const contentType = request.headers.get('content-type') || 'application/json';
-        let body: any;
-
-        if (contentType.includes('multipart/form-data')) {
-            // FormData 파싱 및 전파
-            body = await request.formData();
-        } else if (contentType.includes('application/json')) {
-            body = JSON.stringify(await request.json());
-        } else {
-            body = await request.blob();
-        }
+        const apiKey = process.env.INTERNAL_API_KEY || 'secret_dev_key';
 
         const res = await fetch(url, {
             method: 'POST',
-            body: body,
-            // headers 전달 시 폼 데이터는 헬퍼가 바운더리 자동 생성하도록 헤더 생략
-            headers: contentType.includes('multipart/form-data') 
-                ? { 'X-API-Key': process.env.INTERNAL_API_KEY || 'secret_dev_key' } 
-                : { 'Content-Type': contentType, 'X-API-Key': process.env.INTERNAL_API_KEY || 'secret_dev_key' }
-        });
+            body: request.body, 
+            headers: {
+                'Content-Type': contentType,
+                'X-API-Key': apiKey
+            },
+            // @ts-ignore
+            duplex: 'half'
+        } as any);
 
-        const data = await res.json();
+        // FastAPI 500 에러 등에 대비하여 JSON이 아닐 경우 텍스트로 조회하여 방어
+        const responseContentType = res.headers.get('content-type') || '';
+        let data;
+        if (responseContentType.includes('application/json')) {
+            data = await res.json();
+        } else {
+            data = { message: await res.text() };
+        }
+
         return NextResponse.json(data, { status: res.status });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });

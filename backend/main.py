@@ -102,8 +102,9 @@ def process_pdf_task(pdf_path: str, book_storage: str, uuid_key: str, date_str: 
             uploaded_urls[index] = f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/flipbooks/{date_str}/{uuid_key}/{fname}"
             
         with ThreadPoolExecutor(max_workers=5) as executor:
-            for i, fname in enumerate(filenames):
-                executor.submit(upload_worker, i, fname)
+            futures = [executor.submit(upload_worker, i, fname) for i, fname in enumerate(filenames)]
+            for f in futures:
+                f.result() # 스레드 예외 버블링
             
         # 3. Firestore 도큐먼트 업데이트
         db.collection("flipbooks").document(uuid_key).update({
@@ -112,11 +113,6 @@ def process_pdf_task(pdf_path: str, book_storage: str, uuid_key: str, date_str: 
             "status": "success"
         })
         print(f"✅ [Background] Flipbook-{uuid_key} Firestore Updated successfully. ({len(filenames)} pages)")
-                 
-        # 4. 로컬 템플러리 스페이스 소거 정리 (Clean up)
-        import shutil
-        if os.path.exists(book_storage):
-             shutil.rmtree(book_storage)
              
     except Exception as e:
         print(f"❌ [Background] Error processing PDF-{uuid_key}: {str(e)}")
@@ -127,7 +123,11 @@ def process_pdf_task(pdf_path: str, book_storage: str, uuid_key: str, date_str: 
              })
         except Exception as fe:
              print(f"❌ [Background] Failed to update fail status for {uuid_key}: {str(fe)}")
-
+    finally:
+        # 4. 로컬 템플러리 스페이스 소거 정리 (Clean up)
+        import shutil
+        if os.path.exists(book_storage):
+             shutil.rmtree(book_storage)
 @app.post("/upload")
 async def upload_pdf(
     background_tasks: BackgroundTasks, 
@@ -154,10 +154,11 @@ async def upload_pdf(
     book_dir = os.path.join(STORAGE_DIR, book.uuid_key)
     os.makedirs(book_dir, exist_ok=True)
     
-    # 4. 원본 PDF 저장
+    # 4. 원본 PDF 저장 (Streaming 방식 복사로 RAM 보호)
     pdf_path = os.path.join(book_dir, "original.pdf")
+    import shutil
     with open(pdf_path, "wb") as f:
-        f.write(await file.read())
+        shutil.copyfileobj(file.file, f)
         
     # 5. 백그라운드 변환 가동
     background_tasks.add_task(process_pdf_task, pdf_path, book_dir, book.uuid_key, date_str, split_pages)
@@ -167,7 +168,6 @@ async def upload_pdf(
          "message": "PDF uploaded successfully. Processing background.", 
          "book_id": book.uuid_key
     }
-
 @app.get("/flipbooks")
 def list_flipbooks():
     # Firestore 컬렉션 스트림 조회

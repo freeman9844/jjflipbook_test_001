@@ -11,44 +11,53 @@ def convert_pdf_to_images(pdf_path: str, output_dir: str, dpi: int = 200, split_
     """
     os.makedirs(output_dir, exist_ok=True)
     
-    print(f"Starting PDF conversion: {pdf_path} -> {output_dir} (split_pages={split_pages})")
-    images = convert_from_path(
-        pdf_path,
-        dpi=dpi,
-        poppler_path=POPPLER_PATH,
-        fmt="webp",
-        thread_count=4
-    )
+    from pdf2image import pdfinfo_from_path
+    info = pdfinfo_from_path(pdf_path, poppler_path=POPPLER_PATH)
+    total_pages = info["Pages"]
     
     saved_files = []
     page_count = 1
+    chunk_size = 5 # 5장씩 청크 가공 처리 후 가시성 메모리 해제
     
-    for i, image in enumerate(images):
-        width, height = image.size
+    for start in range(1, total_pages + 1, chunk_size):
+        end = min(start + chunk_size - 1, total_pages)
+        print(f"Processing pages {start} to {end} / {total_pages}...")
         
-        # 가로가 세로보다 길다면 split_pages 활성화 시 반으로 분할 (좌, 우)
-        if split_pages and width > height:
-            # 1. Left Page
-            left_img = image.crop((0, 0, width // 2, height))
-            left_filename = f"page_{page_count}.webp"
-            left_img.save(os.path.join(output_dir, left_filename), "WEBP")
-            saved_files.append(left_filename)
-            page_count += 1
-            
-            # 2. Right Page
-            right_img = image.crop((width // 2, 0, width, height))
-            right_filename = f"page_{page_count}.webp"
-            right_img.save(os.path.join(output_dir, right_filename), "WEBP")
-            saved_files.append(right_filename)
-            page_count += 1
-            
-            print(f"Split Wide Page {i+1} into two pages ({left_filename}, {right_filename})")
-        else:
-            filename = f"page_{page_count}.webp"
-            output_path = os.path.join(output_dir, filename)
-            image.save(output_path, "WEBP")
-            saved_files.append(filename)
-            page_count += 1
-            
-    print(f"Successfully converted {len(images)} sheets to {len(saved_files)} individual pages.")
+        images = convert_from_path(
+            pdf_path,
+            first_page=start,
+            last_page=end,
+            dpi=dpi,
+            poppler_path=POPPLER_PATH,
+            fmt="webp",
+            thread_count=4
+        )
+        
+        for i, image in enumerate(images):
+            width, height = image.size
+            if split_pages and width > height:
+                # 1. Left Page
+                left_img = image.crop((0, 0, width // 2, height))
+                left_filename = f"page_{page_count}.webp"
+                left_img.save(os.path.join(output_dir, left_filename), "WEBP")
+                saved_files.append(left_filename)
+                page_count += 1
+                
+                # 2. Right Page
+                right_img = image.crop((width // 2, 0, width, height))
+                right_filename = f"page_{page_count}.webp"
+                right_img.save(os.path.join(output_dir, right_filename), "WEBP")
+                saved_files.append(right_filename)
+                page_count += 1
+            else:
+                filename = f"page_{page_count}.webp"
+                output_path = os.path.join(output_dir, filename)
+                image.save(output_path, "WEBP")
+                saved_files.append(filename)
+                page_count += 1
+        
+        # 가독성 메모리 변량 클리어용 가비지 컬렉터 암시
+        del images 
+
+    print(f"Successfully converted {total_pages} sheets to {len(saved_files)} individual pages.")
     return saved_files
