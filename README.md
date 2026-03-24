@@ -88,36 +88,6 @@ npm run dev
 └── deploy.sh              # Cloud Run 원클릭 배포 자동화 마스터 스크립트
 ```
 
----
-
-## ☁️ Google Cloud 배포 구조도 (Architecture)
-
-```mermaid
-graph TD
-    User([사용자 / 웹 브라우저]) -->|1. HTTPS 접속| FE_Run["Frontend (Next.js) <br> Cloud Run"];
-    
-    subgraph VPC ["VPC 사설망 (Direct VPC Egress)"]
-        FE_Run -->|2. Proxy API 중계| BE_Run["Backend (FastAPI) <br> Cloud Run <br> (Ingress: Internal)"];
-    end
-    
-    subgraph Google Cloud Platform
-        BE_Run -->|3. PDF 이미지 분할| Poppler["Poppler-utils <br> (컨테이너 내장)"];
-        BE_Run -->|4. 원본 / 변환 이미지 저장| GCS[("Cloud Storage <br> 이미지 버킷")];
-        BE_Run -->|5. 메타데이터 / 오버레이 저장| Firestore[("Cloud Firestore <br> NoSQL DB")];
-        
-        GCS -.->|6. 이미지 다이렉트 로딩| User;
-    end
-
-    style FE_Run fill:#e8f0fe,stroke:#1a73e8,stroke-width:2px
-    style BE_Run fill:#e8f0fe,stroke:#1a73e8,stroke-width:2px
-    style GCS fill:#e6f4ea,stroke:#1e8e3e,stroke-width:2px
-    style Firestore fill:#e6f4ea,stroke:#1e8e3e,stroke-width:2px
-```
-
----
-
----
-
 ## 🔒 Direct VPC 내부망 설계 및 반응형 UI 업데이트
 
 최근 패치를 통해 **보안이 강화된 내부망 라우팅** 및 **모바일 화면 대응 디자인**이 통합되었습니다.
