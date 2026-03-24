@@ -117,19 +117,18 @@ npm run dev
 
 ## 🔒 Direct VPC 내부망 설계 및 망분리 (Security)
 
-최신 패치를 통해 **보안이 강화된 내부망 라우팅** 및 인프라 보호 구조가 통합되었습니다.
-
 ### 1. Direct VPC Egress & Next.js API Routes Proxy
-인프라에 직접적인 외부 접속 공격 차단을 위해 폐쇄 통신망을 설계했습니다.
-*   **Proxy Relay**: 브라우저 클라이언트가 직접 백엔드를 찌르지 않고, `FE App Server (Node.js)`가 연산을 Proxy 대리 위탁합니다. (`/api/backend/*`)
-*   **Internal Ingress**: 백엔드(`Backend Cloud Run`)는 `--ingress=internal`로 가동되어 공용 인터넷 진입이 완벽 차단됩니다.
-*   **Direct VPC Egress**: 프론트엔드와 백엔드가 모두 동일한 사설망(`jwlee-vpc-001`)과 맞물려 상호 간 트래픽이 VPC 밖으로 탈출할 수 없습니다.
+인프라 보호를 위해 외부의 직접적인 연결을 차단하는 폐쇄 통신망으로 설계되었습니다.
+*   **Proxy Relay**: 브라우저 클라이언트가 백엔드 API를 직접 호출하지 않고, Next.js 프론트엔드 서버가 연산을 Proxy로 대리 수행합니다. (`/api/backend/*`)
+*   **Internal Ingress**: 백엔드(FastAPI)는 `--ingress=internal` 정책으로 구동되어 외부 공용 인터넷의 진입점을 완전히 차단합니다.
+*   **Direct VPC Egress**: 프론트엔드와 백엔드 모두 동일한 사설망(`jwlee-vpc-001`) 내에 배포되어 트래픽이 VPC 외부로 유출되지 않고 안전하게 내재됩니다.
 
-### 2. Private DNS 구축 및 내부 라우팅 에러 제압
-*   VPC 내부에 `run.app`에 대한 **Private DNS Zone**을 강제 구동하여, 트래픽이 외부 NAT IP를 경유했다가 `ERROR_INGRESS_TRAFFIC_DISALLOWED` 통신 단절 에러가 발생하던 현상을 완전히 뿌리 뽑았습니다. 이제 모든 내부 트래픽은 구글의 Private Access VIP 레이어(`199.36.153.8`)만을 통과합니다.
+### 2. Private DNS를 통한 완전한 네이티브 라우팅
+*   VPC 내부에 구글 서비스(`run.app`)에 대한 **Private DNS Zone**이 구성되어 있습니다.
+*   두 Cloud Run 서비스 간의 모든 통신은 외부 NAT IP를 경유하지 않으며, 오로지 구글의 내부 사설망인 Private Google Access VIP(`199.36.153.8`)만을 거쳐 빠르고 안전하게 동작합니다.
 
-### 3. API 보안 Header 및 데이터 보호
-*   `POST /upload`, `DELETE /flipbook` 와 같은 비즈니스 핵심 로직에는 `verify_api_key` 검증 미들웨어를 장착하여 허가되지 않은 무단 호출을 기각합니다.
+### 3. API 허가 및 헤더 검증
+*   `POST /upload` 및 `DELETE /flipbook` 등 시스템 상태를 전이시키는 핵심 보호 엔드포인트에는 `verify_api_key` 미들웨어 검증이 적용되어 안전한 상태 제어를 보장합니다.
 
 ---
 

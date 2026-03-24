@@ -103,21 +103,20 @@ Designed to intercept server crashes and out-of-memory cascades during enormous 
 
 ---
 
-## 🔒 Direct VPC Security & Internal Call Networking
+## 🔒 Restricted Internal Routing (Direct VPC Egress)
 
-Security-hardened configurations isolating architecture boundaries completely.
+### 1. Closed Network Topology
+Infrastructures are heavily isolated through stringent Virtual Private network boundaries (`jwlee-vpc-001`) preventing direct public access.
+*   **Internal Ingress**: The Backend API relies on `--ingress=internal` policies to completely shut off payload deliveries originating from the open Internet.
+*   **Proxy Relay**: No remote browser accesses the backend directly; Front-facing Next.js applications strictly proxy the endpoints acting as secure middlemen (`/api/backend/*`).
+*   **Direct VPC Egress**: Configured symmetrically with `--vpc-egress=all-traffic`, constraining all outbounds within local subnets seamlessly.
 
-### 1. Direct VPC Egress & Next.js API Routes Proxy
-Blocks immediate REST vulnerability points from Internet gateways.
-*   **Proxy Relay**: Requests do not trigger straight external links; `FE Server (Node.js)` overrides Proxy configurations securely. (`/api/backend/*`)
-*   **Internal Ingress**: `Backend Cloud Run` invokes via `--ingress=internal`, completely shutting off remote anonymous scans.
-*   **Direct VPC Egress**: Both layers correspond across identical Virtual Private networks(`jwlee-vpc-001`) preventing explicit escape vectors via `--vpc-egress=all-traffic`.
+### 2. Serverless Private DNS Routing
+*   Routing for the Google Cloud service domains (`.run.app`) is autonomously overridden via a dedicated **Private DNS Zone** inside the VPC perimeter.
+*   This ensures all Cloud Run-to-Cloud Run traffic inherently targets Google's interior API layers (`199.36.153.8`) ensuring rapid latency acceleration uncompromised by external NAT IPs.
 
-### 2. Private DNS Configuration
-*   We forcibly forged a robust Private DNS Zone masking `.run.app` inside the VPC perimeter. Traffic loops locally targeting the `199.36.153.8` (Private Google Access VIP) instead of failing externally into the `ERROR_INGRESS_TRAFFIC_DISALLOWED` exception handler!
-
-### 3. API Guards
-*   Secured REST channels with persistent `verify_api_key` middlewares. Structural deformations like deletions require header verifications implicitly.
+### 3. Persistent API Gateway Guards
+*   State-mutating REST channels natively check for administrative permissions. Deletions and updates strictly traverse persistent `verify_api_key` authentication middlewares effectively evaluating payloads.
 
 ---
 
