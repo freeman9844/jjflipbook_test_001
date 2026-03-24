@@ -9,6 +9,9 @@ import json
 from pdf_utils import convert_pdf_to_images
 from models import User, Flipbook, Overlay
 
+from passlib.context import CryptContext
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 # Google Cloud Storage 및 Firestore 이니셜라이징
 from google.cloud import storage, firestore
 GCS_BUCKET_NAME = "jjflipbook-gcs-001"
@@ -20,7 +23,15 @@ db = firestore.Client(project=os.getenv("GOOGLE_CLOUD_PROJECT", "jwlee-argolis-2
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Firestore는 테이블 생성이 필요 없습니다.
+    # 1. 초기 관리자 계정(admin) 시딩 (Seeding)
+    user_ref = db.collection("users").document("admin")
+    if not user_ref.get().exists:
+        admin_user = User(
+            username="admin",
+            password_hash=pwd_context.hash("admin")
+        )
+        user_ref.set(admin_user.dict())
+        print("✅ [Lifespan] Default admin user seeded successfully.")
     yield
 
 app = FastAPI(
@@ -43,6 +54,23 @@ app.add_middleware(
 def read_root():
     return {"status": "ok", "message": "Flipbook MVP API using Firestore is running"}
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+@app.post("/login")
+def login(req: LoginRequest):
+    user_ref = db.collection("users").document(req.username)
+    doc = user_ref.get()
+    if not doc.exists:
+        raise HTTPException(status_code=401, detail="존재하지 않는 사용자입니다.")
+        
+    user_data = doc.to_dict()
+    if not pwd_context.verify(req.password, user_data.get("password_hash")):
+        raise HTTPException(status_code=401, detail="비밀번호가 일치하지 않습니다.")
+        
+    return {"status": "ok", "authenticated": True, "username": req.username}
+
 # --- PDF Upload & Flipbook Management ---
 
 STORAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "storage")
@@ -55,13 +83,19 @@ def process_pdf_task(pdf_path: str, book_storage: str, uuid_key: str, date_str: 
         # 1. 로컬에 임시 변환 저장
         filenames = convert_pdf_to_images(pdf_path, book_storage, split_pages=split_pages)
         
-        # 2. GCS 버킷에 이미지 업로드 및 URL 수집
-        uploaded_urls = []
-        for fname in filenames:
+        # 2. GCS 버킷에 이미지 업로드 및 URL 수집 (병렬 처리)
+        from concurrent.futures import ThreadPoolExecutor
+        uploaded_urls = [None] * len(filenames)
+        
+        def upload_worker(index: int, fname: str):
             local_path = os.path.join(book_storage, fname)
             blob = bucket.blob(f"flipbooks/{date_str}/{uuid_key}/{fname}")
             blob.upload_from_filename(local_path)
-            uploaded_urls.append(f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/flipbooks/{date_str}/{uuid_key}/{fname}")
+            uploaded_urls[index] = f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/flipbooks/{date_str}/{uuid_key}/{fname}"
+            
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            for i, fname in enumerate(filenames):
+                executor.submit(upload_worker, i, fname)
             
         # 3. Firestore 도큐먼트 업데이트
         db.collection("flipbooks").document(uuid_key).update({

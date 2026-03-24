@@ -21,6 +21,15 @@ export default function Home() {
     const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
     const [windowWidth, setWindowWidth] = useState(1200);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [username, setUsername] = useState<string>("");
+    const [password, setPassword] = useState<string>("");
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            setIsAuthenticated(localStorage.getItem("authenticated") === "true");
+        }
+    }, []);
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -35,11 +44,12 @@ export default function Home() {
     const styles = getStyles(isMobile);
 
     useEffect(() => {
-        fetchBooks();
-    }, []);
+        if (isAuthenticated) fetchBooks();
+    }, [isAuthenticated]);
 
     // 페이지 처리 중인 도서(page_count === 0)가 있으면 3초 동적 폴링 유닛 활성
     useEffect(() => {
+        if (!isAuthenticated) return;
         const isProcessing = books.some(b => b.page_count === 0);
         if (isProcessing) {
             const timer = setInterval(() => {
@@ -115,6 +125,52 @@ export default function Home() {
         }
     };
 
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const res = await fetch(`/api/backend/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
+            if (res.ok) {
+                localStorage.setItem("authenticated", "true");
+                setIsAuthenticated(true);
+            } else {
+                alert("❌ 로그인 정보가 일치하지 않습니다.");
+            }
+        } catch (err) {
+            alert("❌ 로그인 처리 중 통신 오류가 발생했습니다.");
+        }
+    };
+
+    if (!isAuthenticated) {
+        return (
+            <div style={styles.loginContainer}>
+                <form style={styles.loginForm} onSubmit={handleLogin}>
+                    <h2 style={{ textAlign: 'center', margin: '0 0 16px 0', color: '#1a1a1a', fontSize: '24px', fontWeight: 'bold' }}>로그인</h2>
+                    <input 
+                        type="text" 
+                        placeholder="아이디" 
+                        style={styles.loginInput} 
+                        value={username} 
+                        onChange={(e) => setUsername(e.target.value)} 
+                        required 
+                    />
+                    <input 
+                        type="password" 
+                        placeholder="비밀번호" 
+                        style={styles.loginInput} 
+                        value={password} 
+                        onChange={(e) => setPassword(e.target.value)} 
+                        required 
+                    />
+                    <button type="submit" style={styles.loginBtn}>로그인</button>
+                </form>
+            </div>
+        );
+    }
+
     return (
         <div style={styles.container}>
             {/* 1. 좌측 세로형 사이드바 (Sidebar) */}
@@ -125,6 +181,12 @@ export default function Home() {
                 <div style={styles.sidebarMenu}>
                     <button style={{ ...styles.sidebarTab, ...styles.sidebarTabActive }}>My Documents</button>
                     <button style={styles.sidebarTab} onClick={() => alert("개별 Flipbook의 View 버튼을 눌러주세요.")}>View</button>
+                    <button 
+                        style={{ ...styles.sidebarTab, marginTop: 'auto', color: '#e11d48', fontWeight: 600 }} 
+                        onClick={() => { localStorage.removeItem("authenticated"); setIsAuthenticated(false); }}
+                    >
+                        🚪 로그아웃
+                    </button>
                 </div>
             </div>
 

@@ -16,7 +16,8 @@ def convert_pdf_to_images(pdf_path: str, output_dir: str, dpi: int = 200, split_
         pdf_path,
         dpi=dpi,
         poppler_path=POPPLER_PATH,
-        fmt="webp"
+        fmt="webp",
+        thread_count=4
     )
     
     saved_files = []

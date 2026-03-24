@@ -10,3 +10,5 @@ python-multipart
 Pillow
 google-cloud-storage
 google-cloud-firestore
+passlib
+bcrypt==3.2.0

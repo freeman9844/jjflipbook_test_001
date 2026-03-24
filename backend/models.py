@@ -4,10 +4,9 @@ from datetime import datetime
 import uuid # 추가
 
 class User(BaseModel):
-    id: Optional[str] = None
-    email: str
-    name: Optional[str] = None
-    picture: Optional[str] = None
+    id: Optional[str] = None # Firestore Document ID
+    username: str
+    password_hash: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class Flipbook(BaseModel):

@@ -118,6 +118,8 @@ graph TD
 
 ---
 
+---
+
 ## 🔒 Direct VPC 내부망 설계 및 반응형 UI 업데이트
 
 최근 패치를 통해 **보안이 강화된 내부망 라우팅** 및 **모바일 화면 대응 디자인**이 통합되었습니다.
@@ -131,4 +133,21 @@ graph TD
 *   **Proxy Relay**: 브라우저 클라이언트가 직접 백엔드를 찌르지 않고, `FE App Server (Node.js)`가 요청 연산을 Proxy 대리 위탁합니다. (`/api/backend/*`)
 *   **Internal Ingress**: 백엔드(`Backend Cloud Run`)는 `--ingress=internal`로 가동되어 공용 인터넷 진입이 완벽 차단됩니다.
 *   **Direct VPC Egress**: 프론트엔드가 `--vpc-egress=all-traffic` 플래그를 타고 오직 가상 사설망(VPC)의 탯줄을 통해서만 백엔드를 다이렉트 교신합니다.
+
+---
+
+## 🔑 Firestore 기반 인증 시스템 (Authentication)
+
+보안과 전용 세션 관리를 위해 고드된 로그인 시스템이 신설되었습니다.
+*   **관리자 자동 시딩**: 초기 부팅 시 Firestore `users` 컬렉션에 `admin` 마스터 계정이 자동 생성됩니다. (초기 PW: `admin`)
+*   **패스워드 암호화**: `passlib` 및 `bcrypt==3.2.0` 사양을 조합하여 안전한 단방향 솔트 해싱으로 암호를 보호합니다.
+*   **연결형 세션**: 대시보드 진입 시 최우선 `isAuthenticated` 훅 연산을 통해 불법 경로 침입을 엄격하게 단속합니다.
+
+---
+
+## ⚡ PDF 다중 스레드 연산 속도 최적화 (Speed Booster)
+
+대용량 PDF 처리 및 클라우드 전송에 수반되던 시간적 지연 병목을 **구조적 병렬화**로 완전히 단축했습니다.
+*   **렌더링 멀티 프로세스**: `pdf2image` 디코딩 연산자에 `thread_count=4` 분산 레벨을 부여하여 무거운 변환 코스트를 분할 가속합니다.
+*   **스레딩 GCS 동시 업로드**: I/O 바운드 구간을 `ThreadPoolExecutor` 풀 구조로 우회하여 5개의 연동 페이로드가 **동시 다발적 릴레이 전송**을 우월하게 수행합니다.
 ```
