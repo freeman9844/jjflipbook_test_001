@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
+import Image from 'next/image';
 
 interface Flipbook {
     id: number;
-    uuid_key: string; // 추가
+    uuid_key: string;
     title: string;
     page_count: number;
-    image_paths_json: string;
+    image_urls?: string[]; // 추가
+    status?: string; // 추가: 'success', 'processing', 'failed'
     created_at: string;
 }
 
@@ -47,16 +49,27 @@ export default function Home() {
         if (isAuthenticated) fetchBooks();
     }, [isAuthenticated]);
 
-    // 페이지 처리 중인 도서(page_count === 0)가 있으면 3초 동적 폴링 유닛 활성
+    // 페이지 처리 중인 도서(page_count === 0)가 있으면 지수 백오프 기반 동적 폴링 유닛 활성
     useEffect(() => {
         if (!isAuthenticated) return;
-        const isProcessing = books.some(b => b.page_count === 0);
-        if (isProcessing) {
-            const timer = setInterval(() => {
-                fetchBooks();
-            }, 3000);
-            return () => clearInterval(timer);
-        }
+        const isProcessing = books.some(b => b.page_count === 0 && b.status !== 'failed');
+        if (!isProcessing) return;
+
+        let delay = 3000;
+        let timerId: NodeJS.Timeout;
+
+        const doPoll = async () => {
+            await fetchBooks();
+            // 다음 지연 시간을 최대 30초 한도로 1.5배씩 배정합니다.
+            delay = Math.min(delay * 1.5, 30000); 
+            timerId = setTimeout(doPoll, delay);
+        };
+
+        timerId = setTimeout(doPoll, delay);
+
+        return () => {
+            if (timerId) clearTimeout(timerId);
+        };
     }, [books]);
 
     const fetchBooks = async () => {
@@ -228,16 +241,9 @@ export default function Home() {
                 ) : (
                     <div style={styles.gridContainer}>
                         {books.map((book) => {
-                            let coverUrl = null;
-                            try {
-                                const paths = JSON.parse(book.image_paths_json);
-                                if (paths && paths.length > 0) {
-                                    const GCS_BUCKET_NAME = "jjflipbook-gcs-001";
-                                    coverUrl = `https://storage.googleapis.com/${GCS_BUCKET_NAME}/flipbooks/${book.id}/${paths[0]}`;
-                                }
-                            } catch (e) {}
-
-                            const isProcessing = book.page_count === 0;
+                            const coverUrl = book.image_urls && book.image_urls.length > 0 ? book.image_urls[0] : null;
+                            const isFailed = book.status === "failed";
+                            const isProcessing = book.page_count === 0 && !isFailed;
 
                             return (
                                 <div 
@@ -249,7 +255,7 @@ export default function Home() {
                                         position: 'relative'
                                     }} 
                                     onClick={() => {
-                                        if (!isProcessing) window.location.href = `/view/${book.uuid_key}`;
+                                        if (!isProcessing && !isFailed) window.location.href = `/view/${book.uuid_key}`;
                                     }}
                                 >
                                     {/* 삭제 버튼 추가 */}
@@ -270,9 +276,22 @@ export default function Home() {
                                             <span style={styles.processingText}>변환 처리 중...</span>
                                         </div>
                                     )}
-                                    <div style={styles.cardCover}>
+
+                                    {isFailed && (
+                                        <div style={styles.processingOverlay}>
+                                            <span style={{ fontSize: '24px' }}>❌</span>
+                                            <span style={{ ...styles.processingText, color: '#ef4444' }}>변환 실패</span>
+                                        </div>
+                                    )}
+                                    <div style={{ ...styles.cardCover, position: 'relative', overflow: 'hidden' }}>
                                         {coverUrl ? (
-                                            <img src={coverUrl} alt={book.title} style={styles.coverImage} />
+                                            <Image 
+                                                src={coverUrl} 
+                                                alt={book.title} 
+                                                fill 
+                                                style={{ objectFit: 'cover' }} 
+                                                sizes="(max-width: 768px) 100vw, 33vw"
+                                            />
                                         ) : (
                                             <div style={styles.coverPlaceholder}>
                                                 <span style={{ fontSize: '32px' }}>📖</span>

@@ -31,19 +31,17 @@ export default function FlipbookEditor({ params }: { params: Promise<{ bookId: s
     const [selectedOverlayIndex, setSelectedOverlayIndex] = useState<number | null>(null);
     const [modalData, setModalData] = useState({ type: 'link', data_url: '' });
 
-    const BACKEND_URL = "http://localhost:8000";
-
     useEffect(() => {
         const fetchData = async () => {
             try {
                 // 1. 플립북 메타데이터 조회
-                const bookRes = await fetch(`${BACKEND_URL}/flipbook/${bookId}`);
+                const bookRes = await fetch(`/api/backend/flipbook/${bookId}`);
                 if (!bookRes.ok) throw new Error("플립북 데이터를 불러오지 못했습니다.");
                 const bookData = await bookRes.json();
                 setBook(bookData);
 
                 // 2. 기존 오버레이 목록 조회
-                const overlayRes = await fetch(`${BACKEND_URL}/flipbook/${bookId}/overlays`);
+                const overlayRes = await fetch(`/api/backend/flipbook/${bookId}/overlays`);
                 if (overlayRes.ok) {
                     const overlayData = await overlayRes.json();
                     setOverlays(overlayData);
@@ -125,7 +123,7 @@ export default function FlipbookEditor({ params }: { params: Promise<{ bookId: s
     // 최종 변경 사항을 백엔드 API 에 일괄 저장
     const handleSaveChanges = async () => {
         try {
-            const res = await fetch(`${BACKEND_URL}/flipbook/${bookId}/overlays`, {
+            const res = await fetch(`/api/backend/flipbook/${bookId}/overlays`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(overlays),
@@ -182,7 +180,7 @@ export default function FlipbookEditor({ params }: { params: Promise<{ bookId: s
                         {currentPageUrl ? (
                              <>
                                 <img 
-                                    src={`${BACKEND_URL}${currentPageUrl}`} 
+                                    src={currentPageUrl} 
                                     alt="edit" 
                                     style={styles.pageImage} 
                                     draggable={false} 

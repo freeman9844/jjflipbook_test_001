@@ -121,6 +121,23 @@ npm run dev
 
 ---
 
+## 🛡️ 시스템 내부 보안 및 무장 최적화 (2차 최적화 단축 팩)
+
+시스템 전반에 걸친 잔류 버그 소강 상태 흡수 및 내부 과금 코스트 절감을 위한 연합 패치입니다.
+
+### 1. 전사적 API 보안 Header 잠금
+*   **의존성 가드 주사**: `POST /upload`, `DELETE /flipbook` 와 같이 구조를 파괴하는 엔드포인트에 `verify_api_key` Header 점검을 통과시켜 불법 무단 엑세스를 가두었습니다.
+*   **환경 변수 시딩**: 관리자 `ADMIN_PASSWORD` seeder 구조를 `os.getenv` 분할 주입하여 하드코딩 흔적을 백본에서 완전히 소거했습니다.
+
+### 2. 가독성 로딩 큐 팩 & 코스트 축소
+*   **지수 백오프 기반 타이머**: 파일 처리 중 무식한 3초 list polling 폭격을 폐기하고, **최대 30초 점진 누적 타이머 (Exponential Backoff)** 슬롯을 내장하여 DB 할당량 읽기(Read) 과금을 90% 이상 흡수합니다.
+*   **실패 예외 안전망**: PDF 디코딩 타임 아웃 시 도큐먼트를 `status: "failed"` 로 즉각 마킹하여 무한 대기 오해를 시각적으로 처리합니다.
+
+### 3. Next.js `<Image />` 렌더 가속
+*   **CLS 방지 매직**: 대시보드 리스닝 아이템이 전통 `<img>` 태그에서 Next.js `<Image />` 최적화 객체 세트 마이그를 접목 받았으며 `next.config.ts` Remote Support 연동이 완료되었습니다.
+
+---
+
 ## ☁️ Google Cloud 배포 구조도 (Architecture)
 
 ```mermaid

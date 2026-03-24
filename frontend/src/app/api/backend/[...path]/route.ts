@@ -48,7 +48,9 @@ export async function POST(
             method: 'POST',
             body: body,
             // headers 전달 시 폼 데이터는 헬퍼가 바운더리 자동 생성하도록 헤더 생략
-            headers: contentType.includes('multipart/form-data') ? {} : { 'Content-Type': contentType }
+            headers: contentType.includes('multipart/form-data') 
+                ? { 'X-API-Key': process.env.INTERNAL_API_KEY || 'secret_dev_key' } 
+                : { 'Content-Type': contentType, 'X-API-Key': process.env.INTERNAL_API_KEY || 'secret_dev_key' }
         });
 
         const data = await res.json();
@@ -69,7 +71,10 @@ export async function DELETE(
     const url = `${BACKEND_URL}/${path}${searchParams}`;
 
     try {
-        const res = await fetch(url, { method: 'DELETE' });
+        const res = await fetch(url, { 
+            method: 'DELETE',
+            headers: { 'X-API-Key': process.env.INTERNAL_API_KEY || 'secret_dev_key' }
+        });
         const data = await res.json();
         return NextResponse.json(data, { status: res.status });
     } catch (error: any) {

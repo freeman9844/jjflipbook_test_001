@@ -14,21 +14,29 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Google Cloud Storage 및 Firestore 이니셜라이징
 from google.cloud import storage, firestore
-GCS_BUCKET_NAME = "jjflipbook-gcs-001"
+GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "jjflipbook-gcs-001")
 
 storage_client = storage.Client(project=os.getenv("GOOGLE_CLOUD_PROJECT", "jwlee-argolis-202104"))
 bucket = storage_client.bucket(GCS_BUCKET_NAME)
 
 db = firestore.Client(project=os.getenv("GOOGLE_CLOUD_PROJECT", "jwlee-argolis-202104"), database="jjflipbook")
 
+from fastapi import Header
+def verify_api_key(x_api_key: str = Header(None)):
+    expected = os.getenv("INTERNAL_API_KEY", "secret_dev_key")
+    if x_api_key != expected:
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid Internal API Key")
+    return True
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 1. 초기 관리자 계정(admin) 시딩 (Seeding)
     user_ref = db.collection("users").document("admin")
     if not user_ref.get().exists:
+        admin_password = os.getenv("ADMIN_PASSWORD", "admin")
         admin_user = User(
             username="admin",
-            password_hash=pwd_context.hash("admin")
+            password_hash=pwd_context.hash(admin_password)
         )
         user_ref.set(admin_user.dict())
         print("✅ [Lifespan] Default admin user seeded successfully.")
@@ -100,7 +108,8 @@ def process_pdf_task(pdf_path: str, book_storage: str, uuid_key: str, date_str: 
         # 3. Firestore 도큐먼트 업데이트
         db.collection("flipbooks").document(uuid_key).update({
             "page_count": len(filenames),
-            "image_urls": uploaded_urls
+            "image_urls": uploaded_urls,
+            "status": "success"
         })
         print(f"✅ [Background] Flipbook-{uuid_key} Firestore Updated successfully. ({len(filenames)} pages)")
                  
@@ -110,13 +119,21 @@ def process_pdf_task(pdf_path: str, book_storage: str, uuid_key: str, date_str: 
              shutil.rmtree(book_storage)
              
     except Exception as e:
-         print(f"❌ [Background] Error processing PDF-{uuid_key}: {str(e)}")
+        print(f"❌ [Background] Error processing PDF-{uuid_key}: {str(e)}")
+        # 실패 상태 Firestore 기록
+        try:
+             db.collection("flipbooks").document(uuid_key).update({
+                  "status": "failed"
+             })
+        except Exception as fe:
+             print(f"❌ [Background] Failed to update fail status for {uuid_key}: {str(fe)}")
 
 @app.post("/upload")
 async def upload_pdf(
     background_tasks: BackgroundTasks, 
     file: UploadFile = File(...),
-    split_pages: bool = Query(True)
+    split_pages: bool = Query(True),
+    validated: bool = Depends(verify_api_key)
 ):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files allowed")
@@ -213,7 +230,7 @@ def update_overlays(uuid_key: str, overlays: list[dict]):
     return {"status": "ok", "message": f"{len(overlays)} overlays updated"}
 
 @app.delete("/flipbook/{uuid_key}")
-def delete_flipbook(uuid_key: str):
+def delete_flipbook(uuid_key: str, validated: bool = Depends(verify_api_key)):
     doc_ref = db.collection("flipbooks").document(uuid_key)
     if not doc_ref.get().exists:
         raise HTTPException(status_code=404, detail="Flipbook not found")
