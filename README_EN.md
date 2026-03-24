@@ -101,6 +101,14 @@ Designed to intercept server crashes and out-of-memory cascades during enormous 
 *   **Backend Streaming Sink**: Writing chunks via `shutil.copyfileobj` pipelines bypasses RAM allocations gracefully.
 *   **Concurrent Upload Pools**: Leveraged `ThreadPoolExecutor` bindings to upload parallel arrays (up to 5 workers) directly towards the unified GCS storage bucket seamlessly.
 
+### 3. 📂 1-Level Folder Structure & Cascade Archiving
+*   **Virtual Prefix Nesting**: Implemented a standalone 1-depth metadata parsing routine mapped via `folder_id` matching states.
+*   **Data Decoupling Principle**: The underlying Storage blob URLs persist securely isolated from UI layer definitions allowing seamless cross-structural `Moves` internally without actual expensive Object Copy operations!
+*   **Heavy Cascade Cleanup**: Administrative purges of Folders programmatically execute hard-deletions on child `Overlays`, child `Firestore Maps`, and finally sweeping away remaining static GCS buckets systematically.
+
+### 4. Cleanup Guarantee
+*   **Forced Garbage Cleanups**: `finally` blocks explicitly mandate terminal OS-level directory wiping (`shutil.rmtree`), strictly closing out dangling memory leaks.
+
 ---
 
 ## 🔒 Restricted Internal Routing (Direct VPC Egress)
