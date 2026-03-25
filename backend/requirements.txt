@@ -12,3 +12,4 @@ google-cloud-storage
 google-cloud-firestore
 passlib
 bcrypt==3.2.0
+aiofiles>=23.2.1
