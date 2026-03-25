@@ -160,11 +160,12 @@ async def upload_pdf(
     book_dir = os.path.join(STORAGE_DIR, book.uuid_key)
     os.makedirs(book_dir, exist_ok=True)
     
-    # 4. 원본 PDF 저장 (Streaming 방식 복사로 RAM 보호)
+    # 4. 원본 PDF 저장 (Streaming 방식 복사로 RAM 보호 및 비동기 처리)
     pdf_path = os.path.join(book_dir, "original.pdf")
-    import shutil
-    with open(pdf_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+    import aiofiles
+    async with aiofiles.open(pdf_path, 'wb') as f:
+        while chunk := await file.read(1024 * 1024):  # 1MB 씩 청크 읽기
+            await f.write(chunk)
         
     # 5. 백그라운드 변환 가동
     background_tasks.add_task(process_pdf_task, pdf_path, book_dir, book.uuid_key, date_str, split_pages)
