@@ -274,7 +274,11 @@ export default function Home() {
                     <button style={styles.sidebarTab} onClick={() => alert("개별 문서를 선택해 주세요")}>View</button>
                     <button 
                         style={{ ...styles.sidebarTab, marginTop: 'auto', color: '#e11d48', fontWeight: 600 }} 
-                        onClick={() => { localStorage.removeItem("isAuthenticated"); setIsAuthenticated(false); }}
+                        onClick={async () => { 
+                            await fetch('/api/backend/logout', { method: 'POST' });
+                            localStorage.removeItem("isAuthenticated"); 
+                            setIsAuthenticated(false); 
+                        }}
                     >
                         🚪 로그아웃
                     </button>
