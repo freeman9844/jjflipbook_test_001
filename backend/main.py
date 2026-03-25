@@ -224,12 +224,17 @@ def delete_single_flipbook(uuid_key: str):
     date_str = book_data.get("date_folder", "")
     doc_ref.delete()
     
-    # 3. GCS 블롭 소거 (Prefix 기반)
+    # 3. GCS 블롭 소거 (Prefix 기반) - 멀티스레딩 병렬 삭제 적용
     try:
+        from concurrent.futures import ThreadPoolExecutor
         prefix_path = f"flipbooks/{date_str}/{uuid_key}/" if date_str else f"flipbooks/{uuid_key}/"
-        blobs = bucket.list_blobs(prefix=prefix_path)
-        for b in blobs:
-            b.delete()
+        blobs = list(bucket.list_blobs(prefix=prefix_path)) # 리스트로 변환하여 로드
+        
+        if blobs:
+            # 최대 10개의 워커 스레드로 동시 삭제 API 호출 (I/O 바운드 작업 최적화)
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                list(executor.map(lambda b: b.delete(), blobs))
+                
     except Exception as e:
          print(f"⚠️ [Delete] GCS cleanup failed for book-{uuid_key}: {str(e)}")
 
