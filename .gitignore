@@ -2,20 +2,34 @@
 backend/.env
 backend/.env.*
 
-# Python caches
+# Python caches & Virtual Environments
 __pycache__/
 *.py[cod]
 *$py.class
 backend/__pycache__/
+backend/venv/
+backend/.pytest_cache/
 
-# Node.js bundles
+# Node.js bundles & Next.js build output
 node_modules/
+frontend/node_modules/
 .next/
 frontend/.next/
-frontend/node_modules/
+frontend/out/
+frontend/build/
 
-# Local databases
+# Local databases & Storage
 backend/*.db
+backend/*.sqlite3
+backend/storage/
 
-# OS overhead
-.DS_Store
+# Test Data & Samples
+test_data/
+samples/
+
+# OS overhead & Editor configurations
+**/.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
