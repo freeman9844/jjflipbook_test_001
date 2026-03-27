@@ -18,9 +18,15 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
     const [isAdmin, setIsAdmin] = useState(false);
     const [zoom, setZoom] = useState<number>(100);
     const [windowWidth, setWindowWidth] = useState(1200);
-    const [windowHeight, setWindowHeight] = useState(800); // 세로 높이 추가
+    const [windowHeight, setWindowHeight] = useState(800);
     const flipBookRef = useRef<any>(null);
     const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
+    // 배경음악 관련 상태
+    const [musicFiles, setMusicFiles] = useState<string[]>([]);
+    const [currentSong, setCurrentSong] = useState<string | null>(null);
+    const [isPlaying, setIsPlaying] = useState<boolean>(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -62,6 +68,69 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
         fetchBook();
     }, [uuidKey]);
 
+    // 음악 목록 불러오기
+    useEffect(() => {
+        fetch('/api/music')
+            .then(res => res.json())
+            .then(data => {
+                if (data.files && data.files.length > 0) {
+                    setMusicFiles(data.files);
+                    const randomSong = data.files[Math.floor(Math.random() * data.files.length)];
+                    setCurrentSong(randomSong);
+                }
+            })
+            .catch(err => console.error("음악 목록 불러오기 실패:", err));
+    }, []);
+
+    // 음악 재생 상태 연동 (직접 재생 상태 관리)
+    useEffect(() => {
+        // 자동 락해제 패턴: 화면의 어느 곳이든 최초 터치/클릭 시 오디오 재생을 시도
+        const handleFirstInteraction = () => {
+            if (!isPlaying && audioRef.current && currentSong) {
+                const playPromise = audioRef.current.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        setIsPlaying(true);
+                    }).catch(e => {
+                        console.log("자동 락해제 실패 (이후 수동 재생 필요):", e);
+                    });
+                }
+            }
+            // 1회 실행 후 즉시 쓰레기 치우기
+            window.removeEventListener('pointerdown', handleFirstInteraction);
+        };
+        
+        window.addEventListener('pointerdown', handleFirstInteraction);
+        return () => window.removeEventListener('pointerdown', handleFirstInteraction);
+    }, [currentSong, isPlaying]);
+
+    const handleSongEnd = () => {
+        if (musicFiles.length > 0) {
+            const nextSong = musicFiles[Math.floor(Math.random() * musicFiles.length)];
+            setCurrentSong(nextSong);
+        }
+    };
+
+    const toggleMusic = () => {
+        if (!audioRef.current || !currentSong) return;
+        if (isPlaying) {
+            audioRef.current.pause();
+            setIsPlaying(false);
+        } else {
+            const playPromise = audioRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    setIsPlaying(true);
+                }).catch(e => {
+                    console.error("재생 오류:", e);
+                    alert("음악 재생에 실패했습니다. (사유: " + e.message + ")\n파일 용량이 너무 크거나 네트워크 연결이 끊겼을 수 있습니다.");
+                });
+            } else {
+                setIsPlaying(true);
+            }
+        }
+    };
+
     if (error) return <div style={{ color: 'red', padding: 20 }}>에러: {error}</div>;
     if (!book) return <div style={{ color: '#5f6368', padding: 20 }}>로딩 중...</div>;
 
@@ -71,6 +140,15 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
 
     return (
         <div style={styles.container}>
+            {/* Audio Element */}
+            {currentSong && (
+                <audio 
+                    ref={audioRef} 
+                    src={`/Reading_Playlist_MP3/${encodeURIComponent(currentSong)}`} 
+                    onEnded={handleSongEnd}
+                />
+            )}
+
             {/* 1. 좌측 세로형 사이드바 (Sidebar) */}
             {!isMobile && (
                 <div style={styles.sidebar}>
@@ -177,6 +255,23 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                             </button>
                         </div>
+                        <div style={styles.musicControl}>
+                            <button 
+                                style={{
+                                    ...styles.musicBtn, 
+                                    color: isPlaying ? '#2563eb' : '#5f6368',
+                                    backgroundColor: isPlaying ? '#eef2ff' : 'transparent'
+                                }} 
+                                onClick={toggleMusic} 
+                                title={currentSong ? currentSong : "음악 없음"}
+                            >
+                                {isPlaying ? (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+                                ) : (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -201,6 +296,7 @@ const getStyles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     zoomText: { fontSize: '12px', fontWeight: 500, color: '#3c4043', width: '36px', textAlign: 'center' },
     pagerControl: { display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '1px solid #e8eaed', paddingLeft: '16px' },
     pagerBtn: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#5f6368', padding: 0 },
-    pagerText: { fontSize: '12px', fontWeight: 500, color: '#3c4043' }
+    pagerText: { fontSize: '12px', fontWeight: 500, color: '#3c4043' },
+    musicControl: { display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '1px solid #e8eaed', paddingLeft: '16px' },
+    musicBtn: { border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', borderRadius: '50%', transition: 'all 0.2s', width: '32px', height: '32px' }
 });
-
