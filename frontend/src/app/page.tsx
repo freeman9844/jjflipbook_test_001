@@ -23,6 +23,7 @@ interface Folder {
 export default function Home() {
     const [books, setBooks] = useState<Flipbook[]>([]);
     const [folders, setFolders] = useState<Folder[]>([]);
+    const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
     
     // 폴더 네비게이션용 상태
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -117,6 +118,8 @@ export default function Home() {
             }
         } catch (err) {
             console.error("데이터 통신 지연", err);
+        } finally {
+            setIsLoadingData(false);
         }
     };
 
@@ -300,7 +303,7 @@ export default function Home() {
                                 : "문서 및 폴더 목록을 관리하고 읽어보세요."}
                         </p>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '12px', width: isMobile ? '100%' : 'auto' }}>
                         {currentFolderId !== null && (
                             <button 
                                 onClick={() => setCurrentFolderId(null)} 
@@ -318,12 +321,12 @@ export default function Home() {
                             </button>
                         )}
                         
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '14px', color: '#5f6368' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', justifyContent: isMobile ? 'flex-start' : 'center', gap: '6px', cursor: 'pointer', fontSize: '14px', color: '#5f6368', background: isMobile ? '#f8fafc' : 'transparent', padding: isMobile ? '12px' : '0', borderRadius: isMobile ? '8px' : '0', width: isMobile ? '100%' : 'auto', boxSizing: 'border-box' }}>
                             <input 
                                 type="checkbox" 
                                 checked={splitPages} 
                                 onChange={(e) => setSplitPages(e.target.checked)} 
-                                style={{ cursor: 'pointer' }}
+                                style={{ cursor: 'pointer', width: '16px', height: '16px' }}
                             />
                             📄 1p ➡️ 2장 분할 (스프레드)
                         </label>
@@ -340,7 +343,12 @@ export default function Home() {
                     </div>
                 </div>
 
-                {folders.length === 0 && filteredBooks.length === 0 ? (
+                {isLoadingData ? (
+                    <div style={styles.emptyState}>
+                        <div style={styles.spinner}></div>
+                        <p style={styles.emptyText}>데이터를 불러오는 중입니다...</p>
+                    </div>
+                ) : folders.length === 0 && filteredBooks.length === 0 ? (
                     <div style={styles.emptyState}>
                         <div style={styles.emptyIcon}>📂</div>
                         <p style={styles.emptyText}>항목이 비어있습니다. 폴더를 생성하거나 pdf를 투입해주세요!</p>

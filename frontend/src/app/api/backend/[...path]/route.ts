@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 const SESSION_TOKEN = process.env.SESSION_SECRET || "simple-mvp-session-secret-123";
 
@@ -38,7 +40,7 @@ export async function GET(
     const url = `${BACKEND_URL}/${pathStr}${searchParams}`;
 
     try {
-        const res = await fetch(url);
+        const res = await fetch(url, { cache: 'no-store' });
         const responseContentType = res.headers.get('content-type') || '';
         let data;
         if (responseContentType.includes('application/json')) {
