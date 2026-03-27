@@ -109,6 +109,11 @@ Designed to intercept server crashes and out-of-memory cascades during enormous 
 ### 4. Cleanup Guarantee
 *   **Forced Garbage Cleanups**: `finally` blocks explicitly mandate terminal OS-level directory wiping (`shutil.rmtree`), strictly closing out dangling memory leaks.
 
+### 5. Media & Original Asset Retention (Audio & Original PDF)
+*   **Permanent PDF Storage**: Alongside the chunked images, the pristine `.pdf` file is directly teleported to the GCS bucket during upload. This ensures the original quality document remains eternally retrievable.
+*   **Intuitive Download UI (Viewer)**: An automated Download Button orchestrates itself into the bottom-bar controls inside the Viewer, providing direct raw-download flows to viewers seamlessly.
+*   **Audio Autoplay Unlocker**: Bypassing heavy browser Autoplay Policies, Background `.mp3` music pipelines attach to 'First Interaction Listeners' (Touch/Pointer Down) ensuring streams unlock immediately upon user intention.
+
 ---
 
 ## 🔒 Restricted Internal Routing (Direct VPC Egress)
