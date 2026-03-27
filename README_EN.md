@@ -147,7 +147,8 @@ Robust session controls implementing local tokens securely.
 *   **SSR Crash Prevention**: Removed raw DOM invocations scaling global animations. Repositioned elements securely inside nested `useEffect` sandboxes dropping `This page couldn't load` crashes.
 *   **React Error #310 Hooks Enforcement**: Rearranged Early Return conditional architectures completely ensuring robust React DOM component lifecycle states. Fixed unexpected unmount/mount Hooks sequential disruptions.
 *   **Next.js API Static Data Cache Sabotage**: Eradicated an aggressive Next.js App Router anomaly where default `GET` fetches statically cached empty placeholder data permanently upon production builds. By injecting `export const dynamic = 'force-dynamic'` and `cache: 'no-store'`, zero-downtime live-fetching bridges the Next.js API Proxy with FastAPI correctly.
-*   **Mobile-Responsive Overhauls**: Optimized CSS Flex properties to sequentially stack heavy UI elements natively inside narrow viewports, preventing destructive UI overlapping anomalies across smartphones.
+*   **Mobile-Responsive Dashboard Arrays**: Optimized CSS Flex properties to sequentially stack heavy UI elements natively inside narrow viewports, preventing destructive UI overlapping anomalies across smartphones.
+*   **Dynamic Viewer Scaling & Viewport Re-anchoring (100dvh)**: Solved a critical overlap issue where the flipbook component aggressively scaled out of bounds and forcefully clipped the bottom audio/pager control bars on mobile endpoints. Integrated `100dvh` (Dynamic Viewport Height) alongside an intuitive top-down flex scaling algorithm (`center top` scaling deductions), ensuring the document natively anchors itself rendering harmonious bottom controls flawlessly without manual scrolling.
 
 ---
 
