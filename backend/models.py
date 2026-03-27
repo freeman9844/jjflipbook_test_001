@@ -24,6 +24,7 @@ class Flipbook(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     # Firestore는 리스트(배열)를 직접 지원하므로 변경
     image_urls: List[str] = [] 
+    pdf_url: Optional[str] = None
 
 class Overlay(BaseModel):
     id: Optional[str] = None

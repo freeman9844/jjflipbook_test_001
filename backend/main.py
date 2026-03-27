@@ -110,11 +110,18 @@ def process_pdf_task(pdf_path: str, book_storage: str, uuid_key: str, date_str: 
             futures = [executor.submit(upload_worker, i, fname) for i, fname in enumerate(filenames)]
             for f in futures:
                 f.result() # 스레드 예외 버블링
+                
+        # [NEW] 원본 PDF도 GCS에 저장
+        pdf_blob_name = f"flipbooks/{date_str}/{uuid_key}/original.pdf" if date_str else f"flipbooks/{uuid_key}/original.pdf"
+        pdf_blob = bucket.blob(pdf_blob_name)
+        pdf_blob.upload_from_filename(pdf_path)
+        pdf_url = f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{pdf_blob_name}"
             
         # 3. Firestore 도큐먼트 업데이트
         db.collection("flipbooks").document(uuid_key).update({
             "page_count": len(filenames),
             "image_urls": uploaded_urls,
+            "pdf_url": pdf_url,
             "status": "success"
         })
         print(f"✅ [Background] Flipbook-{uuid_key} Firestore Updated successfully. ({len(filenames)} pages)")
