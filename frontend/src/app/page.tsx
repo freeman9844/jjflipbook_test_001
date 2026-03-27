@@ -275,16 +275,19 @@ export default function Home() {
                 <div style={styles.sidebarMenu}>
                     <button style={{ ...styles.sidebarTab, ...styles.sidebarTabActive }} onClick={() => setCurrentFolderId(null)}>My Documents</button>
                     <button style={styles.sidebarTab} onClick={() => alert("개별 문서를 선택해 주세요")}>View</button>
-                    <button 
-                        style={{ ...styles.sidebarTab, marginTop: 'auto', color: '#e11d48', fontWeight: 600 }} 
-                        onClick={async () => { 
-                            await fetch('/api/backend/logout', { method: 'POST' });
-                            localStorage.removeItem("isAuthenticated"); 
-                            setIsAuthenticated(false); 
-                        }}
-                    >
-                        🚪 로그아웃
-                    </button>
+                    {/* 데스크탑에서만 보이는 상단 로그아웃 버튼 */}
+                    {!isMobile && (
+                        <button 
+                            style={{ ...styles.sidebarTab, marginTop: 'auto', color: '#e11d48', fontWeight: 600 }} 
+                            onClick={async () => { 
+                                await fetch('/api/backend/logout', { method: 'POST' });
+                                localStorage.removeItem("isAuthenticated"); 
+                                setIsAuthenticated(false); 
+                            }}
+                        >
+                            🚪 로그아웃
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -451,6 +454,22 @@ export default function Home() {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+
+                {/* 모바일 최하단 로그아웃 버튼 */}
+                {isMobile && (
+                    <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'center' }}>
+                        <button 
+                            style={{ padding: '12px 24px', width: '100%', backgroundColor: '#fff0f2', color: '#e11d48', border: '1px solid #ffe4e6', borderRadius: '8px', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}
+                            onClick={async () => { 
+                                await fetch('/api/backend/logout', { method: 'POST' });
+                                localStorage.removeItem("isAuthenticated"); 
+                                setIsAuthenticated(false); 
+                            }}
+                        >
+                            🚪 로그아웃
+                        </button>
                     </div>
                 )}
             </div>
