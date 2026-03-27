@@ -112,7 +112,7 @@ Designed to intercept server crashes and out-of-memory cascades during enormous 
 ### 5. Media & Original Asset Retention (Audio & Original PDF)
 *   **Permanent PDF Storage**: Alongside the chunked images, the pristine `.pdf` file is directly teleported to the GCS bucket during upload. This ensures the original quality document remains eternally retrievable.
 *   **Intuitive Download UI (Viewer)**: An automated Download Button orchestrates itself into the bottom-bar controls inside the Viewer, providing direct raw-download flows to viewers seamlessly.
-*   **Audio Autoplay Unlocker**: Bypassing heavy browser Autoplay Policies, Background `.mp3` music pipelines attach to 'First Interaction Listeners' (Touch/Pointer Down) ensuring streams unlock immediately upon user intention.
+*   **Audio Autoplay Unlocker**: Bypassing heavy mobile browser (Safari/iOS) Autoplay Policies, Background `.mp3` music pipelines attach to 'First Interaction Listeners' (`pointerdown`, `touchstart`) across the document, ensuring multimedia streams unlock reliably upon the very first viewer intent.
 
 ---
 
@@ -146,6 +146,8 @@ Robust session controls implementing local tokens securely.
 
 *   **SSR Crash Prevention**: Removed raw DOM invocations scaling global animations. Repositioned elements securely inside nested `useEffect` sandboxes dropping `This page couldn't load` crashes.
 *   **React Error #310 Hooks Enforcement**: Rearranged Early Return conditional architectures completely ensuring robust React DOM component lifecycle states. Fixed unexpected unmount/mount Hooks sequential disruptions.
+*   **Next.js API Static Data Cache Sabotage**: Eradicated an aggressive Next.js App Router anomaly where default `GET` fetches statically cached empty placeholder data permanently upon production builds. By injecting `export const dynamic = 'force-dynamic'` and `cache: 'no-store'`, zero-downtime live-fetching bridges the Next.js API Proxy with FastAPI correctly.
+*   **Mobile-Responsive Overhauls**: Optimized CSS Flex properties to sequentially stack heavy UI elements natively inside narrow viewports, preventing destructive UI overlapping anomalies across smartphones.
 
 ---
 
