@@ -47,6 +47,20 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
         }
     }, []);
 
+    // 키보드 네비게이션 추가 (화살표 키)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!flipBookRef.current) return;
+            if (e.key === 'ArrowRight') {
+                flipBookRef.current.pageFlip().flipNext();
+            } else if (e.key === 'ArrowLeft') {
+                flipBookRef.current.pageFlip().flipPrev();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     useEffect(() => {
         const fetchBook = async () => {
             try {
@@ -82,31 +96,50 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
             .catch(err => console.error("음악 목록 불러오기 실패:", err));
     }, []);
 
-    // 음악 재생 상태 연동 (직접 재생 상태 관리)
+    // 음악 재생 상태 연동 및 모바일 First-Interaction Unlock 로직
     useEffect(() => {
-        // 자동 락해제 패턴: 화면의 어느 곳이든 최초 터치/클릭 시 오디오 재생을 시도
-        const handleFirstInteraction = () => {
-            if (!isPlaying && audioRef.current && currentSong) {
-                const playPromise = audioRef.current.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        setIsPlaying(true);
-                    }).catch(e => {
-                        console.log("자동 락해제 실패 (이후 수동 재생 필요):", e);
-                    });
+        // 기존 상태 연동
+        if (currentSong && audioRef.current && isPlaying) {
+            audioRef.current.play().catch(e => console.log("자동재생 방지됨:", e));
+        }
+
+        // 브라우저 정책 우회를 위한 첫 터치 언락 함수
+        const unlockAudio = async () => {
+            if (audioRef.current && currentSong && !isPlaying) {
+                try {
+                    await audioRef.current.play();
+                    setIsPlaying(true);
+                    // 성공하면 더이상 감지할 필요 없음
+                    window.removeEventListener('pointerdown', unlockAudio);
+                    window.removeEventListener('touchstart', unlockAudio);
+                    window.removeEventListener('keydown', unlockAudio);
+                } catch (e) {
+                    console.log("아직 오디오 락 해제 불가:", e);
                 }
             }
-            // 1회 실행 후 즉시 쓰레기 치우기
-            window.removeEventListener('pointerdown', handleFirstInteraction);
         };
-        
-        window.addEventListener('pointerdown', handleFirstInteraction);
-        return () => window.removeEventListener('pointerdown', handleFirstInteraction);
+
+        if (typeof window !== 'undefined' && !isPlaying) {
+            window.addEventListener('pointerdown', unlockAudio, { once: true });
+            window.addEventListener('touchstart', unlockAudio, { once: true });
+            window.addEventListener('keydown', unlockAudio, { once: true });
+        }
+
+        return () => {
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('pointerdown', unlockAudio);
+                window.removeEventListener('touchstart', unlockAudio);
+                window.removeEventListener('keydown', unlockAudio);
+            }
+        };
     }, [currentSong, isPlaying]);
 
     const handleSongEnd = () => {
         if (musicFiles.length > 0) {
-            const nextSong = musicFiles[Math.floor(Math.random() * musicFiles.length)];
+            // 현재 곡 제외하고 랜덤 선택하도록 개선
+            const otherSongs = musicFiles.filter(s => s !== currentSong);
+            const nextList = otherSongs.length > 0 ? otherSongs : musicFiles;
+            const nextSong = nextList[Math.floor(Math.random() * nextList.length)];
             setCurrentSong(nextSong);
         }
     };
@@ -117,17 +150,8 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
             audioRef.current.pause();
             setIsPlaying(false);
         } else {
-            const playPromise = audioRef.current.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    setIsPlaying(true);
-                }).catch(e => {
-                    console.error("재생 오류:", e);
-                    alert("음악 재생에 실패했습니다. (사유: " + e.message + ")\n파일 용량이 너무 크거나 네트워크 연결이 끊겼을 수 있습니다.");
-                });
-            } else {
-                setIsPlaying(true);
-            }
+            audioRef.current.play().catch(e => console.log("재생 오류:", e));
+            setIsPlaying(true);
         }
     };
 
@@ -255,20 +279,11 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                             </button>
                         </div>
-                        
-                        {/* 4. PDF 다운로드 및 음악 컨트롤 */}
                         <div style={styles.musicControl}>
-                            {book.pdf_url && (
-                                <a 
-                                    href={book.pdf_url} 
-                                    download={`${book.title}.pdf`}
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    style={{ ...styles.musicBtn, color: '#5f6368', textDecoration: 'none', marginRight: '4px' }}
-                                    title="원본 PDF 다운로드"
-                                >
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                </a>
+                            {isPlaying && currentSong && (
+                                <div style={styles.musicTitle}>
+                                    🎵 {currentSong.replace('.mp3', '')}
+                                </div>
                             )}
                             <button 
                                 style={{
@@ -312,5 +327,6 @@ const getStyles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     pagerBtn: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#5f6368', padding: 0 },
     pagerText: { fontSize: '12px', fontWeight: 500, color: '#3c4043' },
     musicControl: { display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '1px solid #e8eaed', paddingLeft: '16px' },
-    musicBtn: { border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', borderRadius: '50%', transition: 'all 0.2s', width: '32px', height: '32px' }
+    musicBtn: { border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', borderRadius: '50%', transition: 'all 0.2s', width: '32px', height: '32px' },
+    musicTitle: { fontSize: '11px', color: '#2563eb', fontWeight: 500, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
 });
