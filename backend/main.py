@@ -275,7 +275,8 @@ def get_flipbook(uuid_key: str):
         "uuid_key": uuid_key,
         "title": book.get("title", ""),
         "page_count": book.get("page_count", 0),
-        "image_urls": book.get("image_urls", [])
+        "image_urls": book.get("image_urls", []),
+        "pdf_url": book.get("pdf_url", None)
     }
 
 @app.get("/flipbook/{uuid_key}/overlays")
