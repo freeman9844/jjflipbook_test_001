@@ -64,8 +64,28 @@ app.add_middleware(
 )
 
 @app.get("/")
-def read_root():
-    return {"status": "ok", "message": "Flipbook MVP API using Firestore is running"}
+async def read_root():
+    # Firestore & GCS 연결 상태 확인 (헬스체크)
+    try:
+        db.collection("users").document("admin").get()
+        firestore_status = "connected"
+    except Exception:
+        firestore_status = "error"
+        
+    try:
+        bucket.exists()
+        gcs_status = "connected"
+    except Exception:
+        gcs_status = "error"
+
+    return {
+        "status": "ok", 
+        "message": "Flipbook MVP API is running",
+        "services": {
+            "firestore": firestore_status,
+            "gcs": gcs_status
+        }
+    }
 
 class LoginRequest(BaseModel):
     username: str
