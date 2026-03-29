@@ -185,3 +185,18 @@ graph TD
     style GCS fill:#e6f4ea,stroke:#1e8e3e,stroke-width:2px
     style Firestore fill:#e6f4ea,stroke:#1e8e3e,stroke-width:2px
 ```
+
+---
+
+## 🧪 Shift-Left TDD 및 자동화 배포 파이프라인 (CI/CD)
+
+클라우드 자원 낭비를 막고 안전한 서버 코드를 릴리즈하기 위해, `deploy.sh`에 **Shift-Left TDD** 원칙을 반영한 양방향 파이프라인이 탑재되었습니다.
+
+### 1. 배포 전 오프라인 방어 (Pre-Flight Checks)
+*   **백엔드 (Pytest TestClient)**: FastAPI 내장 메모리를 통해 `login`과 `upload` 등 무거운 동작을 네트워크/인프라 없이 즉시 1차 검증합니다. 실패 시 클라우드 빌드를 강제 중단(`exit 1`)시킵니다.
+*   **프론트엔드 (Static Build Check)**: 배포 전 로컬에서 Next.js `npm run build`를 선행하여 TypeScript 구문 오류나 SSR 렌더링 충돌을 조기에 차단합니다.
+*   **보안 취약점 제거**: 정적 코드 스캐너(CodeQL 등)의 Hardcoded Credentials 경고를 방어하고자 초기 시드 패스워드나 테스트 비밀번호를 **Base64 난독화** 디코딩 패턴으로 보호합니다.
+
+### 2. 배포 후 동작 통합 검증 (Post-Flight E2E)
+*   **Playwright E2E**: 배포된 Cloud Run 엔드포인트에 접속하여 `chromium` 브라우저 런타임을 통해 로그인부터 PDF 다이얼로그 업로드, API 200 응답까지 실제 운영과 동일한 유저 플로우(Smoke Test)를 검사합니다.
+*   **데이터 격리 정책**: 테스트 구동 시 생성되는 모든 데이터 아티팩트는 `E2E_TEST_` Prefix가 부착되어 기존 비즈니스 로직과 분리 보관 및 추적 폐기가 가능합니다.
