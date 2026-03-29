@@ -18,9 +18,9 @@ echo "----------------------------------------"
 
 # 1. 백엔드 메모리 단위 테스트 (TestClient)
 echo "▶ Checking & Installing Backend Local Test Dependencies..."
-if ! python3 -c "import pytest" &> /dev/null; then
-  echo "📦 pytest / httpx 등 테스트 모듈이 없습니다. 자동으로 로컬 설치를 진행합니다..."
-  python3 -m pip install pytest httpx requests --quiet --index-url https://pypi.org/simple
+if ! python3 -c "import pytest, fastapi, bcrypt" &> /dev/null; then
+  echo "📦 패키지 의존성이 누락되었습니다. backend/requirements.txt 를 설치합니다..."
+  python3 -m pip install -r backend/requirements.txt --quiet --index-url https://pypi.org/simple
 fi
 
 echo "▶ Running Backend Local Tests..."
