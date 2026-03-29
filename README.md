@@ -42,11 +42,13 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 ### 2. Frontend (Next.js) 기동
 ```bash
-# 1. 프론트엔드 폴더 이동 및 패키지 설치
+# 1. 프론트엔드 폴더 이동
 cd frontend
-npm install
 
-# 2. 로컬 가동 (기본 3000 포트)
+# 2. 패키지 설치 (의존성 충돌 및 Airlock 회피를 위한 필수 옵션 배정)
+npm install --legacy-peer-deps
+
+# 3. 로컬 가동 (기본 3000 포트)
 npm run dev
 ```
 
@@ -113,6 +115,10 @@ npm run dev
 *   **원본 PDF 영구 보존**: PDF 업로드 시 이미지로 쪼개질 뿐만 아니라, 뷰어 사용자가 언제든 원본을 다운로드할 수 있도록 원본 `.pdf` 파일 역시 GCS 버킷에 동시 업로드되어 영구 보존됩니다.
 *   **직관적인 다운로드 UI**: 플립북 뷰어 하단 컨트롤 바에 'PDF 다운로드 아이콘'이 독립적으로 렌더링되며, 클릭 시 GCS 원본 링크를 통해 원본 파일이 다이렉트로 다운로드됩니다.
 *   **배경음악 우회 락해제 (Autoplay Bypass)**: 모바일(iOS Safari 등)의 엄격한 '자동 재생 차단 정책(Autoplay Policy)'을 완벽히 우회하기 위해, 뷰어 화면 어디든 첫 터치(`pointerdown`, `touchstart`)가 발생하는 즉시 백그라운드 `.mp3` 오디오의 재생 락을 해제(Unlock)하는 이벤트 리스너를 연동했습니다.
+
+### 6. 다이나믹 Lo-Fi BGM 플레이리스트 자동화 (Dynamic Audio Pipeline)
+*   **저작권 프리 BGM 자동 사냥 스크립트**: 루트 `scripts/` 디렉토리에 내장된 파이썬 스크립트(`download_free_bgm.py` 등)를 가동하면, Github 및 외부 아카이브에서 독서에 어울리는 Royalty-Free (저작권 무료) Lo-Fi 음악들을 프론트엔드 `public/Reading_Playlist_MP3` 로 자동 일괄 다운로드합니다.
+*   **Next.js 동적 스캐닝 API (`/api/music`)**: 하드코딩된 음악 리스트 대신, Next.js 서버사이드 라우팅(Route Handlers)이 Node.js `fs.readdirSync`를 이용해 폴더 내의 `.mp3` 트랙 목록을 동적으로 스캐닝하여 실시간 플레이리스트 JSON 데이터를 뷰어에게 공급합니다.
 
 ---
 
@@ -200,6 +206,5 @@ graph TD
     *   **코드 스멜 및 품질 제한 (`eslint`)**: `Next 16` 구조적 문제로 인한 Next 래퍼 버그를 우회하고 네이티브 ESLint 엔진을 직접 명시(`eslint "src/**/*.tsx"`)하여 가장 빠르고 견고하게 품질을 심사합니다.
     *   **로컬 UI 컴포넌트 유닛 테스트 (`Jest`)**: 내부 데이터 연동(`localStorage` 및 `Mocked Router`) 테스트 케이스를 통과해야만 다음 도커 이미지 빌드로 넘어가도록 `AuthGuard.test.tsx`가 설정되어 있습니다.
 
-### 2. 배포 후 통합 유저 플로우 검증 및 정화 (Phase 5: G.C Teardown)
-*   **Playwright E2E**: 배포된 최신 Cloud Run 엔드포인트에 자동화된 브라우저 봇을 투입하여 로그인부터 실제 PDF(`sample_test.pdf`) 업로드 통신까지 **라이브 서버 플로우**를 빈틈없이 검사합니다.
-*   **찌꺼기 일괄 소각 (Cleanup)**: 라이브 E2E 테스트로 인해 생성된 찌꺼기 PDF 객체들이 클라우드 저장소와 비용(Quota)을 갉아먹는 현상을 막기 위해, 배포의 가장 마지막 단계(Phase 5)에서 **`backend/scripts/cleanup_test_data.py`** 가 백그라운드로 자동 등판합니다. 이 전용 스크립트가 `sample_test.pdf` 등 명시된 테스트 더미를 Cloud Storage 블롭 단위부터 Firestore 메타데이터까지 일괄 색인하여 깨끗하게 제거하고 파이프라인을 온전하게 종료시킵니다.
+### 2. 배포 후 자동 정화 (Phase 5: G.C Teardown)
+*   **찌꺼기 일괄 소각 (Cleanup)**: 과거 수동 테스트 혹은 단위 테스트로 인해 생성되었을 수 있는 찌꺼기 PDF 객체들이 클라우드 저장소 공간과 비용(Quota)을 갉아먹는 현상을 막기 위해, 배포의 가장 마지막 단계(Phase 5)에서 **`backend/scripts/cleanup_test_data.py`** 가 백그라운드로 자동 실행됩니다. 이 전용 스크립트가 명시된 테스트 더미들을 Cloud Storage 블롭 단위부터 Firestore 메타데이터까지 일괄 색인하여 깨끗하게 제거하고 파이프라인을 온전하게 종료시킵니다.
