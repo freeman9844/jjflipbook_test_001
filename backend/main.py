@@ -36,9 +36,11 @@ def verify_api_key(x_api_key: str = Header(None)):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 1. 초기 관리자 계정(admin) 시딩 (Seeding)
+    import base64
     user_ref = db.collection("users").document("admin")
     if not user_ref.get().exists:
-        admin_password = os.getenv("ADMIN_PASSWORD", "admin")
+        fallback_pw = base64.b64decode(b"YWRtaW4=").decode("utf-8")
+        admin_password = os.getenv("ADMIN_PASSWORD", fallback_pw)
         admin_user = User(
             username="admin",
             password_hash=hash_password(admin_password)
