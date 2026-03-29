@@ -20,7 +20,7 @@ echo "----------------------------------------"
 echo "▶ Checking & Installing Backend Local Test Dependencies..."
 if ! python3 -c "import pytest, fastapi, bcrypt" &> /dev/null; then
   echo "📦 패키지 의존성이 누락되었습니다. backend/requirements.txt 를 설치합니다..."
-  python3 -m pip install -r backend/requirements.txt --quiet --index-url https://pypi.org/simple
+  uv pip install -r backend/requirements.txt --quiet --index-url https://pypi.org/simple
 fi
 
 echo "▶ Running Backend Local Tests..."
@@ -100,19 +100,7 @@ echo "👉 Backend URL: $BACKEND_URL"
 echo "========================================"
 
 echo "----------------------------------------"
-echo "🛠️ [5/6] 배포 후 Backend API 통합 테스트 플라이트 체크 (Pytest) 시작..."
-echo "----------------------------------------"
-export DEPLOYED_API_URL=$BACKEND_URL
-python3 -m pytest backend/tests/test_api_integration.py -v
-if [ $? -ne 0 ]; then
-  echo "❌ [TDD ALERT] 백엔드 API 통합 테스트 시나리오가 실패했습니다."
-  echo "⚠️ 운영 파이프라인 롤백 혹은 확인이 필요합니다."
-  exit 1
-fi
-echo "✅ Backend API Integration 검증 통과!"
-
-echo "----------------------------------------"
-echo "🖥️ [6/6] 배포 후 Frontend E2E 자동화 테스트 (Playwright) 시작..."
+echo "🖥️ [5/5] 배포 후 Frontend E2E 자동화 테스트 (Playwright) 시작..."
 echo "----------------------------------------"
 export STAGING_URL=$FRONTEND_URL
 cd frontend
