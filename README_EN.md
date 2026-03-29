@@ -133,10 +133,11 @@ Infrastructures are heavily isolated through stringent Virtual Private network b
 
 ---
 
-## 🔑 Authentication Restructuring (Admin Core)
+## 🔑 Administrator Authentication & Security Refactoring
 
-Robust session controls implementing local tokens securely.
-*   **Admin Auto Seeding**: The `admin` account is seeded strictly during system lifespan bindings.
+A highly modernized login architecture redesigned strictly for Zero-Trust principles and exclusive session control.
+*   **Zero-Trust Password Elimination**: Eradicated the vulnerable legacy frontend routine (`loginId === admin`) inside the `AuthGuard` container, which dangerously evaluated passwords statically on the client side. All validations are now safely proxied (`POST /api/backend/login`) to the isolated backend.
+*   **Randomized Admin Seeding**: Patched the flawed auto-seeding logic which previously defaulted to the static `admin` footprint. The `deploy.sh` script now implements cryptographic (`openssl rand -base64`) password generation at the initial lifespan hook.
 *   **Bcrypt Encryption Overhaul**: Upgraded the algorithm by completely stripping legacy `passlib` exceptions and replacing them manually executing intrinsic `bcrypt` validations securing hash collisions securely.
 *   **React State Parity**: Client-side hook instances now synchronize with unified global generic loops bypassing overlapping component bugs reliably.
 
