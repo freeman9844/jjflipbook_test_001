@@ -42,7 +42,8 @@ def test_local_pdf_upload():
         # 내부적으로 GCS, Firestore에 덤프를 쓰게 됩니다.
         # 이를 막기 위해 Mocking을 하거나, E2E_TEST_ Prefix로 보내어 안전하게 저장되는지 확인합니다.
         files = {"file": ("E2E_TEST_local_test.pdf", f, "application/pdf")}
-        response = client.post("/upload", files=files)
+        headers = {"x-api-key": os.getenv("INTERNAL_API_KEY", "secret_dev_key")}
+        response = client.post("/upload", files=files, headers=headers)
         # 로직상 성공하면 200을 바로 뱉고 백그라운드로 넘깁니다.
         assert response.status_code == 200, f"로컬 업로드 라우터 실패: {response.text}"
         data = response.json()
