@@ -66,7 +66,7 @@ app.add_middleware(
 )
 
 @app.get("/")
-async def read_root():
+def read_root():
     # Firestore & GCS 연결 상태 확인 (헬스체크)
     try:
         db.collection("users").document("admin").get()
@@ -120,18 +120,15 @@ def process_pdf_task(pdf_path: str, book_storage: str, uuid_key: str, date_str: 
         
         # 2. GCS 버킷에 이미지 업로드 및 URL 수집 (병렬 처리)
         from concurrent.futures import ThreadPoolExecutor
-        uploaded_urls = [None] * len(filenames)
         
-        def upload_worker(index: int, fname: str):
+        def upload_worker(fname: str):
             local_path = os.path.join(book_storage, fname)
             blob = bucket.blob(f"flipbooks/{date_str}/{uuid_key}/{fname}")
             blob.upload_from_filename(local_path)
-            uploaded_urls[index] = f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/flipbooks/{date_str}/{uuid_key}/{fname}"
+            return f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/flipbooks/{date_str}/{uuid_key}/{fname}"
             
         with ThreadPoolExecutor(max_workers=5) as executor:
-            futures = [executor.submit(upload_worker, i, fname) for i, fname in enumerate(filenames)]
-            for f in futures:
-                f.result() # 스레드 예외 버블링
+            uploaded_urls = list(executor.map(upload_worker, filenames))
                 
         # [NEW] 원본 PDF도 GCS에 저장
         pdf_blob_name = f"flipbooks/{date_str}/{uuid_key}/original.pdf" if date_str else f"flipbooks/{uuid_key}/original.pdf"

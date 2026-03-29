@@ -62,17 +62,7 @@ export default function Home() {
         }
     }, []);
 
-    useEffect(() => {
-        if (typeof document !== 'undefined') {
-            const styleId = "spin-animation-style";
-            if (!document.getElementById(styleId)) {
-                const styleSheet = document.createElement("style");
-                styleSheet.id = styleId;
-                styleSheet.innerText = `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
-                document.head.appendChild(styleSheet);
-            }
-        }
-    }, []);
+    const pollDelay = useRef(3000);
 
     const isMobile = windowWidth < 768;
     const styles = getStyles(isMobile);
@@ -85,20 +75,19 @@ export default function Home() {
     useEffect(() => {
         if (!isAuthenticated) return;
         const isProcessing = books.some(b => b.page_count === 0 && b.status !== 'failed');
-        if (!isProcessing) return;
+        
+        if (!isProcessing) {
+            pollDelay.current = 3000;
+            return;
+        }
 
-        let delay = 3000;
-        let timerId: NodeJS.Timeout;
+        const timerId = setTimeout(() => {
+            fetchAllData();
+            pollDelay.current = Math.min(pollDelay.current * 1.5, 30000);
+        }, pollDelay.current);
 
-        const doPoll = async () => {
-            await fetchAllData();
-            delay = Math.min(delay * 1.5, 30000); 
-            timerId = setTimeout(doPoll, delay);
-        };
-
-        timerId = setTimeout(doPoll, delay);
-        return () => { if (timerId) clearTimeout(timerId); };
-    }, [books]);
+        return () => clearTimeout(timerId);
+    }, [books, isAuthenticated]);
 
     const fetchAllData = async () => {
         try {
