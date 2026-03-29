@@ -14,7 +14,8 @@
     "react-pageflip": "^2.0.3"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^20.19.37",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "typescript": "^5"

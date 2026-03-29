@@ -12,6 +12,31 @@ fi
 
 echo "🚀 배포를 시작합니다! Project ID: $PROJECT_ID, Region: $REGION"
 
+echo "----------------------------------------"
+echo "🛠️ [Phase 0] 배포 전 (Pre-Flight) 오프라인 TDD 및 빌드 검증 시작..."
+echo "----------------------------------------"
+
+# 1. 백엔드 메모리 단위 테스트 (TestClient)
+echo "▶ Running Backend Local Tests..."
+PYTHONPATH=./backend python3 -m pytest backend/tests/test_api_local.py -v
+if [ $? -ne 0 ]; then
+  echo "❌ [PRE-FLIGHT] 백엔드 오프라인 단위 테스트 실패! 배포를 전면 취소합니다."
+  exit 1
+fi
+
+# 2. 프론트엔드 정적 SSR 컴파일 검사
+echo "▶ Running Frontend Static Build Check..."
+cd frontend
+npm run build
+if [ $? -ne 0 ]; then
+  echo "❌ [PRE-FLIGHT] 프론트엔드 로컬 빌드/컴파일 실패! 배포를 전면 취소합니다."
+  cd ..
+  exit 1
+fi
+cd ..
+
+echo "✅ 사전 역량 검증 완벽 통과! 진짜 클라우드 배포 파이프라인(Phase 1~4)을 시작합니다..."
+
 # 1. 백엔드 빌드 및 배포
 echo "----------------------------------------"
 echo "📦 [1/4] Backend 도커 이미지 빌드 중..."
@@ -67,3 +92,32 @@ echo "🎉 모든 배포가 완료되었습니다!"
 echo "👉 Frontend URL: $FRONTEND_URL"
 echo "👉 Backend URL: $BACKEND_URL"
 echo "========================================"
+
+echo "----------------------------------------"
+echo "🛠️ [5/6] 배포 후 Backend API 통합 테스트 플라이트 체크 (Pytest) 시작..."
+echo "----------------------------------------"
+export DEPLOYED_API_URL=$BACKEND_URL
+python3 -m pytest backend/tests/test_api_integration.py -v
+if [ $? -ne 0 ]; then
+  echo "❌ [TDD ALERT] 백엔드 API 통합 테스트 시나리오가 실패했습니다."
+  echo "⚠️ 운영 파이프라인 롤백 혹은 확인이 필요합니다."
+  exit 1
+fi
+echo "✅ Backend API Integration 검증 통과!"
+
+echo "----------------------------------------"
+echo "🖥️ [6/6] 배포 후 Frontend E2E 자동화 테스트 (Playwright) 시작..."
+echo "----------------------------------------"
+export STAGING_URL=$FRONTEND_URL
+cd frontend
+# Playwright Test
+npx playwright test
+if [ $? -ne 0 ]; then
+  echo "❌ [TDD ALERT] 프론트엔드 E2E Smoke Test 가 실패했습니다."
+  echo "⚠️ 상세 디버깅은 콘솔 에러를 확인하세요."
+  cd ..
+  exit 1
+fi
+cd ..
+echo "✅ Frontend Playwright Smoke Test 검증 통과!"
+echo "🚀 모든 검증 파이프라인(TDD Flow)이 배포된 클라우드 환경에서 성공적으로 종결되었습니다."
