@@ -331,7 +331,7 @@ export default function Home() {
                                 onChange={(e) => setSplitPages(e.target.checked)} 
                                 style={{ cursor: 'pointer', width: '16px', height: '16px' }}
                             />
-                            📄 1p ➡️ 2장 분할 (스프레드)
+                            2장 분할
                         </label>
                         <input 
                             type="file" 
