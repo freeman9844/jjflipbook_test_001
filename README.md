@@ -200,9 +200,6 @@ graph TD
     *   **코드 스멜 및 품질 제한 (`eslint`)**: `Next 16` 구조적 문제로 인한 Next 래퍼 버그를 우회하고 네이티브 ESLint 엔진을 직접 명시(`eslint "src/**/*.tsx"`)하여 가장 빠르고 견고하게 품질을 심사합니다.
     *   **로컬 UI 컴포넌트 유닛 테스트 (`Jest`)**: 내부 데이터 연동(`localStorage` 및 `Mocked Router`) 테스트 케이스를 통과해야만 다음 도커 이미지 빌드로 넘어가도록 `AuthGuard.test.tsx`가 설정되어 있습니다.
 
-### 2. 배포 인프라 및 보안망 우회 (Dependency Resolve)
-*   **Airlock 프록시 우회**: 사내망(`go/corp-airlock`)에서 비롯된 React 버전 간 의존성 충돌(`ERESOLVE`) 문제로 파이프라인이 정지하지 않도록, `deploy.sh`와 `frontend/Dockerfile` 컨테이너 빌드 두 단계 모두에 `--legacy-peer-deps` 및 퍼블릭 NPM 레지스트리를 주입하여 어떠한 환경에서도 빌드가 멈추지 않는 방탄 스크립트로 고도화했습니다.
-
-### 3. 배포 후 통합 유저 플로우 검증 및 정화 (Phase 5: G.C Teardown)
+### 2. 배포 후 통합 유저 플로우 검증 및 정화 (Phase 5: G.C Teardown)
 *   **Playwright E2E**: 배포된 최신 Cloud Run 엔드포인트에 자동화된 브라우저 봇을 투입하여 로그인부터 실제 PDF(`sample_test.pdf`) 업로드 통신까지 **라이브 서버 플로우**를 빈틈없이 검사합니다.
 *   **찌꺼기 일괄 소각 (Cleanup)**: 라이브 E2E 테스트로 인해 생성된 찌꺼기 PDF 객체들이 클라우드 저장소와 비용(Quota)을 갉아먹는 현상을 막기 위해, 배포의 가장 마지막 단계(Phase 5)에서 **`backend/scripts/cleanup_test_data.py`** 가 백그라운드로 자동 등판합니다. 이 전용 스크립트가 `sample_test.pdf` 등 명시된 테스트 더미를 Cloud Storage 블롭 단위부터 Firestore 메타데이터까지 일괄 색인하여 깨끗하게 제거하고 파이프라인을 온전하게 종료시킵니다.
