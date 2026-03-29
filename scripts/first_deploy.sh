@@ -9,7 +9,7 @@ REGION="asia-northeast3"                   # 리전 (서울)
 BUCKET_NAME="jjflipbook-storage-$PROJECT_ID" # GCS 버킷 이름 (글로벌 고유)
 DB_NAME="jjflipbook"                       # Firestore DB 이름
 API_KEY="my-secret-internal-key-1234!"     # 프론트<->백엔드 통신용 API 키
-ADMIN_PW="admin"                       # 초기 관리자 비밀번호
+ADMIN_PW=$(openssl rand -base64 12)        # 초기 관리자 비밀번호 (자동 무작위 생성)
 # =========================================================
 
 echo "🚀 [$PROJECT_ID] 프로젝트에 배포를 시작합니다..."

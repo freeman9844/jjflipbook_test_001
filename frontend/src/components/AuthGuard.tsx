@@ -24,14 +24,24 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (loginId === "admin" && password === "admin") {
-            localStorage.setItem("isAuthenticated", "true");
-            setIsLoggedIn(true);
-            setLoginError("");
-        } else {
-            setLoginError("❌ ID 또는 Password가 잘못되었습니다.");
+        try {
+            const res = await fetch(`/api/backend/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: loginId, password })
+            });
+
+            if (res.ok) {
+                localStorage.setItem("isAuthenticated", "true");
+                setIsLoggedIn(true);
+                setLoginError("");
+            } else {
+                setLoginError("❌ ID 또는 Password가 잘못되었습니다.");
+            }
+        } catch (err) {
+            setLoginError("❌ 서버와 통신할 수 없습니다.");
         }
     };
 
@@ -55,7 +65,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
                     <input type="text" placeholder="아이디" value={loginId} onChange={(e) => setLoginId(e.target.value)} style={styles.loginInput} required />
                     <input type="password" placeholder="비밀번호" value={password} onChange={(e) => setPassword(e.target.value)} style={styles.loginInput} required />
                     <button type="submit" style={styles.loginBtn}>로그인</button>
-                    <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '12px', color: '#9aa0a6' }}>id: admin / pw: admin</div>
                 </form>
             </div>
         );
