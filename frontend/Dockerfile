@@ -2,7 +2,8 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+# React 19 의존성 충돌 무시 (Testing Library 호환성 해결용)
+RUN npm install --legacy-peer-deps
 COPY . .
 
 # 빌드 시점에 백엔드 Cloud Run URL을 주입 (정적 JS 파일에 구워짐)

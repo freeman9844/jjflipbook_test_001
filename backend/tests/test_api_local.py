@@ -31,20 +31,26 @@ def test_local_login_success():
     data = response.json()
     assert data.get("authenticated") is True, "응답 JSON에 authenticated 키가 True 여야 합니다."
 
-def test_local_pdf_upload():
+from unittest.mock import patch
+
+@patch("main.db.collection")
+@patch("main.process_pdf_task")
+def test_local_pdf_upload(mock_process, mock_collection):
     """4. 인메모리 업로드 시나리오 (Firebase 연결 없이 라우팅 통과 여부 검증)"""
     # 더미 파일 준비
     test_pdf_path = os.path.join(os.path.dirname(__file__), "test_data", "sample.pdf")
     assert os.path.exists(test_pdf_path), "Test data missing: sample.pdf"
 
+    # Firestore Document Mock 처리 (실제 DB에 안 쓰게 차단)
+    mock_doc = mock_collection.return_value.document.return_value
+    mock_doc.set.return_value = None
+
     with open(test_pdf_path, "rb") as f:
-        # 이 테스트는 background convert 태스크를 유발하므로
-        # 내부적으로 GCS, Firestore에 덤프를 쓰게 됩니다.
-        # 이를 막기 위해 Mocking을 하거나, E2E_TEST_ Prefix로 보내어 안전하게 저장되는지 확인합니다.
+        # FastAPI 라우터를 우회하여 GCS 통신 찌꺼기 생성을 막습니다 (Mocking 적용)
         files = {"file": ("E2E_TEST_local_test.pdf", f, "application/pdf")}
         headers = {"x-api-key": os.getenv("INTERNAL_API_KEY", "secret_dev_key")}
         response = client.post("/upload", files=files, headers=headers)
-        # 로직상 성공하면 200을 바로 뱉고 백그라운드로 넘깁니다.
-        assert response.status_code == 200, f"로컬 업로드 라우터 실패: {response.text}"
+        # 로직상 성공하면 200만 검증 (Mocking으로 인해 백그라운드 태스크나 DB 덤프는 무시됨)
+        assert response.status_code == 200, f"로컬 업로드 라우터 통과 실패: {response.text}"
         data = response.json()
         assert "book_id" in data
