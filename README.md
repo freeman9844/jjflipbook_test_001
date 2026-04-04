@@ -121,7 +121,7 @@ npm run dev
 *   **배경음악 우회 락해제 (Autoplay Bypass)**: 모바일(iOS Safari 등)의 엄격한 '자동 재생 차단 정책(Autoplay Policy)'을 완벽히 우회하기 위해, 뷰어 화면 어디든 첫 터치(`pointerdown`, `touchstart`)가 발생하는 즉시 백그라운드 `.mp3` 오디오의 재생 락을 해제(Unlock)하는 이벤트 리스너를 연동했습니다.
 
 ### 6. 다이나믹 Lo-Fi BGM 플레이리스트 자동화 (Dynamic Audio Pipeline)
-*   **GCS 기반 분산 오디오 저장소**: Repository 용량 최적화 및 빌드 속도 개선을 위해 150MB가 넘는 수십 개의 배경음악 `.mp3` 파일들을 로컬 폴더(`frontend/public`)가 아닌 **Google Cloud Storage 버킷(`jjflipbook-gcs-001/bgm/`)**으로 전면 분리 이관했습니다. 
+*   **GCS 기반 분산 오디오 저장소**: Repository 용량 최적화 및 빌드 속도 개선을 위해 150MB가 넘는 수십 개의 배경음악 `.mp3` 파일들을 로컬 폴더(`frontend/public`)가 아닌 **Google Cloud Storage 버킷**으로 전면 분리 이관했습니다. 
 *   **Next.js 동적 JSON API (`/api/music`)**: 서버사이드 라우팅(Route Handlers)이 로컬 파일시스템(`fs`) 대신 GCS의 **REST API를 직접 Fetch 호출**하여 버킷 내의 음악 목록을 실시간으로 스캐닝하고, 퍼블릭 재생 URL 리스트를 동적으로 프론트엔드에 공급합니다. 프론트엔드를 재배포할 필요 없이 GCS에 파일을 추가/삭제하는 것만으로 즉각 플레이리스트가 업데이트됩니다.
 
 ---
