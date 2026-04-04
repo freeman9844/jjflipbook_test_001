@@ -1,18 +1,40 @@
 #!/bin/bash
 
 # ========================================
-# [기본 인프라 설정]
-# 이 변수들을 수정하면 프로젝트 이름, DB, VPC 등을 
-# 한 번에 변경하여 배포할 수 있습니다.
+# [멀티 환경 통합 배포 스크립트]
+# 대화형 프롬프트를 통해 타겟 프로젝트를 선택하고,
+# 환경 변수 설정 후 TDD 검증 및 Cloud Run 배포를 진행합니다.
 # ========================================
+
+echo "========================================"
+echo "🚀 배포할 타겟 환경을 선택하세요:"
+echo "  1) jwlee-test-project-01 (테스트 퍼블릭 망)"
+echo "  2) jwlee-argolis-202104  (운영 VPC 사설망)"
+echo "========================================"
+read -p "번호 선택 (1 또는 2): " project_choice
+
+if [ "$project_choice" = "1" ]; then
+    export PROJECT_ID="jwlee-test-project-01"
+    export GCS_BUCKET_NAME="jjflipbook-gcs-0001"
+    export VPC_NETWORK="default"
+    export VPC_SUBNET="default"
+    export DOCKER_REPO="asia-northeast3-docker.pkg.dev/$PROJECT_ID/jwlee-repo"
+    export REGION="asia-northeast3"
+    export FIRESTORE_DB_NAME="jjflipbook"
+elif [ "$project_choice" = "2" ]; then
+    export PROJECT_ID="jwlee-argolis-202104"
+    export GCS_BUCKET_NAME="jjflipbook-gcs-001"
+    export VPC_NETWORK="jwlee-vpc-001"
+    export VPC_SUBNET="jwlee-vpc-001"
+    export DOCKER_REPO="gcr.io/$PROJECT_ID"
+    export REGION="asia-northeast3"
+    export FIRESTORE_DB_NAME="jjflipbook"
+else
+    echo "❌ 잘못된 입력입니다. 스크립트를 종료합니다."
+    exit 1
+fi
+
 export GCLOUD_PATH="${GCLOUD_PATH:-/Users/jungwoonlee/google-cloud-sdk/bin/gcloud}"
-export PROJECT_ID="${PROJECT_ID:-$($GCLOUD_PATH config get-value project 2>/dev/null)}"
-export REGION="${REGION:-asia-northeast3}" # 서울 리전 (임의 변경 가능)
-export FIRESTORE_DB_NAME="${FIRESTORE_DB_NAME:-jjflipbook}"
-export GCS_BUCKET_NAME="${GCS_BUCKET_NAME:-jjflipbook-gcs-001}"
-export VPC_NETWORK="${VPC_NETWORK:-jwlee-vpc-001}"
-export VPC_SUBNET="${VPC_SUBNET:-jwlee-vpc-001}"
-export DOCKER_REPO="${DOCKER_REPO:-gcr.io/$PROJECT_ID}"
 
 if [ -z "$PROJECT_ID" ]; then
   echo "❌ gcloud 프로젝트 ID를 찾을 수 없습니다. gcloud config set project [ID]를 먼저 실행하세요."
@@ -91,7 +113,7 @@ VPC_OPTIONS=""
 INGRESS_OPTIONS="--ingress=all"
 
 if [ -n "$VPC_NETWORK" ] && [ "$VPC_NETWORK" != "default" ]; then
-  VPC_OPTIONS="--network=$VPC_NETWORK --subnet=$VPC_SUBNET --vpc-egress=private-ranges-only"
+  VPC_OPTIONS="--network=$VPC_NETWORK --subnet=$VPC_SUBNET --vpc-egress=all-traffic"
   INGRESS_OPTIONS="--ingress=internal"
   echo "🔒 커스텀 VPC 보안 모드로 배포됩니다. (Network: $VPC_NETWORK)"
 else
