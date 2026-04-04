@@ -8,7 +8,7 @@
 
 echo "========================================"
 echo "🚀 배포할 타겟 환경을 선택하세요:"
-echo "  1) jwlee-test-project-01 (테스트 퍼블릭 망)"
+echo "  1) jwlee-test-project-01 (개인 프로젝트 망)"
 echo "  2) jwlee-argolis-202104  (운영 VPC 사설망)"
 echo "========================================"
 read -p "번호 선택 (1 또는 2): " project_choice
