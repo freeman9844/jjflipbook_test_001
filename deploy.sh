@@ -113,7 +113,7 @@ VPC_OPTIONS=""
 INGRESS_OPTIONS="--ingress=all"
 
 if [ -n "$VPC_NETWORK" ] && [ "$VPC_NETWORK" != "default" ]; then
-  VPC_OPTIONS="--network=$VPC_NETWORK --subnet=$VPC_SUBNET --vpc-egress=all-traffic"
+  VPC_OPTIONS="--network=$VPC_NETWORK --subnet=$VPC_SUBNET --vpc-egress=private-ranges-only"
   INGRESS_OPTIONS="--ingress=internal"
   echo "🔒 커스텀 VPC 보안 모드로 배포됩니다. (Network: $VPC_NETWORK)"
 else
