@@ -15,6 +15,9 @@ export GCS_BUCKET_NAME="jjflipbook-gcs-0001"
 export VPC_NETWORK="default"
 export VPC_SUBNET="default"
 
+# Artifact Registry Repo 설정 (jwlee-repo)
+export DOCKER_REPO="asia-northeast3-docker.pkg.dev/$PROJECT_ID/jwlee-repo"
+
 echo "========================================"
 echo "🧪 테스트 빌드 환경 설정 완료"
 echo "👉 PROJECT_ID: $PROJECT_ID"
