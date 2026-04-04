@@ -168,7 +168,7 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
             {currentSong && (
                 <audio 
                     ref={audioRef} 
-                    src={`/Reading_Playlist_MP3/${encodeURIComponent(currentSong)}`} 
+                    src={currentSong.startsWith('http') ? currentSong : `/Reading_Playlist_MP3/${encodeURIComponent(currentSong)}`} 
                     onEnded={handleSongEnd}
                 />
             )}
@@ -215,7 +215,8 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
                         >
                             {book.image_urls.map((url: string, index: number) => (
                                 <div key={index} style={styles.pageItem}>
-                                     <img 
+                                     {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img 
                                         src={url.startsWith('http') ? url : `${BACKEND_URL}${url}`} 
                                         alt={`Page ${index + 1}`} 
                                         style={styles.pageImage}
@@ -300,7 +301,7 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
                             )}
                             {isPlaying && currentSong && (
                                 <div style={styles.musicTitle}>
-                                    🎵 {currentSong.replace('.mp3', '')}
+                                    🎵 {currentSong.split('/').pop()?.replace('.mp3', '')}
                                 </div>
                             )}
                             <button 
@@ -310,7 +311,7 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
                                     backgroundColor: isPlaying ? '#eef2ff' : 'transparent'
                                 }} 
                                 onClick={toggleMusic} 
-                                title={currentSong ? currentSong : "음악 없음"}
+                                title={currentSong ? currentSong.split('/').pop() : "음악 없음"}
                             >
                                 {isPlaying ? (
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>

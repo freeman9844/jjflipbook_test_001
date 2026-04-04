@@ -6,7 +6,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 backend_dir = os.path.dirname(current_dir)
 sys.path.append(backend_dir)
 
-from main import db, delete_single_flipbook
+from database import db
+from services.flipbook_service import delete_single_flipbook
 
 def main():
     print("🧹 [CLEANUP] 테스트 더미 데이터 검사 및 일괄 삭제(GC) 시작...")

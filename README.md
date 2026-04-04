@@ -76,8 +76,12 @@ npm run dev
 
 ```text
 ├── backend/
-│   ├── main.py            # FastAPI 비즈니스 로직 (Firestore, GCS 연동)
+│   ├── main.py            # FastAPI 애플리케이션 진입점 및 컨텍스트 초기화
+│   ├── database.py        # Firestore 및 GCS 클라이언트 연동 모듈
 │   ├── models.py          # Pydantic NoSQL 데이터 모델 팩토리
+│   ├── utils.py           # 인증(비밀번호, API 키) 등 공통 유틸리티
+│   ├── routers/           # 도메인별 API 엔드포인트 분리 (auth, flipbooks, folders)
+│   ├── services/          # PDF 백그라운드 처리 등 핵심 비즈니스 로직 (flipbook_service)
 │   ├── pdf_utils.py       # poppler 기반 PDF 페이지 렌더링 디코더
 │   ├── Dockerfile         # 백엔드 컨테이너 빌드 가이드 
 │   └── requirements.txt   # 라이브러리 명세 파이프라인
@@ -117,8 +121,8 @@ npm run dev
 *   **배경음악 우회 락해제 (Autoplay Bypass)**: 모바일(iOS Safari 등)의 엄격한 '자동 재생 차단 정책(Autoplay Policy)'을 완벽히 우회하기 위해, 뷰어 화면 어디든 첫 터치(`pointerdown`, `touchstart`)가 발생하는 즉시 백그라운드 `.mp3` 오디오의 재생 락을 해제(Unlock)하는 이벤트 리스너를 연동했습니다.
 
 ### 6. 다이나믹 Lo-Fi BGM 플레이리스트 자동화 (Dynamic Audio Pipeline)
-*   **저작권 프리 BGM 자동 사냥 스크립트**: 루트 `scripts/` 디렉토리에 내장된 파이썬 스크립트(`download_free_bgm.py` 등)를 가동하면, Github 및 외부 아카이브에서 독서에 어울리는 Royalty-Free (저작권 무료) Lo-Fi 음악들을 프론트엔드 `public/Reading_Playlist_MP3` 로 자동 일괄 다운로드합니다.
-*   **Next.js 동적 스캐닝 API (`/api/music`)**: 하드코딩된 음악 리스트 대신, Next.js 서버사이드 라우팅(Route Handlers)이 Node.js `fs.readdirSync`를 이용해 폴더 내의 `.mp3` 트랙 목록을 동적으로 스캐닝하여 실시간 플레이리스트 JSON 데이터를 뷰어에게 공급합니다.
+*   **GCS 기반 분산 오디오 저장소**: Repository 용량 최적화 및 빌드 속도 개선을 위해 150MB가 넘는 수십 개의 배경음악 `.mp3` 파일들을 로컬 폴더(`frontend/public`)가 아닌 **Google Cloud Storage 버킷(`jjflipbook-gcs-001/bgm/`)**으로 전면 분리 이관했습니다. 
+*   **Next.js 동적 JSON API (`/api/music`)**: 서버사이드 라우팅(Route Handlers)이 로컬 파일시스템(`fs`) 대신 GCS의 **REST API를 직접 Fetch 호출**하여 버킷 내의 음악 목록을 실시간으로 스캐닝하고, 퍼블릭 재생 URL 리스트를 동적으로 프론트엔드에 공급합니다. 프론트엔드를 재배포할 필요 없이 GCS에 파일을 추가/삭제하는 것만으로 즉각 플레이리스트가 업데이트됩니다.
 
 ---
 
@@ -145,8 +149,8 @@ npm run dev
 *   VPC 내부에 구글 서비스(`run.app`)에 대한 **Private DNS Zone**이 구성되어 있습니다.
 *   두 Cloud Run 서비스 간의 모든 통신은 외부 NAT IP를 경유하지 않으며, 오로지 구글의 내부 사설망인 Private Google Access VIP(`199.36.153.8`)만을 거쳐 빠르고 안전하게 동작합니다.
 
-### 3. API 허가 및 헤더 검증
-*   `POST /upload` 및 `DELETE /flipbook` 등 시스템 상태를 전이시키는 핵심 보호 엔드포인트에는 `verify_api_key` 미들웨어 검증이 적용되어 안전한 상태 제어를 보장합니다.
+### 4. 보안 강화 및 CORS (Cross-Origin Resource Sharing) 제한
+*   **프론트엔드 도메인 화이트리스트 검증**: 백엔드의 보안 강화를 위해, 모든 출처(`*`)를 허용하던 기존 방식에서 탈피하여 환경 변수로 주입된 지정된 `NEXT_PUBLIC_FRONTEND_URL` 도메인만 API와 통신할 수 있도록 CORS 미들웨어 구성을 엄격하게 수정했습니다.
 
 ---
 

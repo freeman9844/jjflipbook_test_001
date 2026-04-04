@@ -179,7 +179,8 @@ export default function FlipbookEditor({ params }: { params: Promise<{ bookId: s
                     >
                         {currentPageUrl ? (
                              <>
-                                <img 
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img 
                                     src={currentPageUrl} 
                                     alt="edit" 
                                     style={styles.pageImage} 

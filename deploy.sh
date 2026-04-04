@@ -27,13 +27,13 @@ echo "----------------------------------------"
 
 # 1. 백엔드 메모리 단위 테스트 (TestClient)
 echo "▶ Checking & Installing Backend Local Test Dependencies..."
-if ! .venv/bin/python3 -c "import pytest, fastapi, bcrypt" &> /dev/null; then
+if ! backend/venv/bin/python3 -c "import pytest, fastapi, bcrypt" &> /dev/null; then
   echo "📦 패키지 의존성이 누락되었습니다. backend/requirements.txt 를 설치합니다..."
-  .venv/bin/pip install -r backend/requirements.txt --quiet --index-url https://pypi.org/simple
+  backend/venv/bin/pip install -r backend/requirements.txt --quiet --index-url https://pypi.org/simple
 fi
 
 echo "▶ Running Backend Local Tests..."
-PYTHONPATH=./backend .venv/bin/python3 -m pytest backend/tests/test_api_local.py -v
+PYTHONPATH=./backend backend/venv/bin/python3 -m pytest backend/tests/test_api_local.py -v
 if [ $? -ne 0 ]; then
   echo "❌ [PRE-FLIGHT] 백엔드 오프라인 단위 테스트 실패! 배포를 전면 취소합니다."
   exit 1
@@ -147,7 +147,7 @@ echo "----------------------------------------"
 export GOOGLE_CLOUD_PROJECT=$PROJECT_ID
 export FIRESTORE_DB_NAME=$FIRESTORE_DB_NAME
 export GCS_BUCKET_NAME=$GCS_BUCKET_NAME
-.venv/bin/python3 backend/scripts/cleanup_test_data.py
+backend/venv/bin/python3 backend/scripts/cleanup_test_data.py
 if [ $? -ne 0 ]; then
   echo "⚠️ [CLEANUP WARNING] 테스트 더미 데이터 삭제 중 일부 오류가 발생했을 수 있습니다 (비치명적 경고)"
 fi

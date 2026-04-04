@@ -33,8 +33,8 @@ def test_local_login_success():
 
 from unittest.mock import patch
 
-@patch("main.db.collection")
-@patch("main.process_pdf_task")
+@patch("routers.flipbooks.db.collection")
+@patch("routers.flipbooks.process_pdf_task")
 def test_local_pdf_upload(mock_process, mock_collection):
     """4. 인메모리 업로드 시나리오 (Firebase 연결 없이 라우팅 통과 여부 검증)"""
     # 더미 파일 준비

@@ -6,6 +6,8 @@ backend/.env.*
 __pycache__/
 *.py[cod]
 *$py.class
+.venv/
+download_venv/
 backend/__pycache__/
 backend/venv/
 backend/.pytest_cache/

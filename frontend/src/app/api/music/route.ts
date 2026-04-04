@@ -1,14 +1,22 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 
 export async function GET() {
     try {
-        const musicDir = path.join(process.cwd(), 'public', 'Reading_Playlist_MP3');
-        if (!fs.existsSync(musicDir)) {
+        const bucketUrl = "https://storage.googleapis.com/storage/v1/b/jjflipbook-gcs-001/o?prefix=bgm/";
+        const res = await fetch(bucketUrl, { next: { revalidate: 3600 } });
+        if (!res.ok) {
             return NextResponse.json({ files: [] });
         }
-        const files = fs.readdirSync(musicDir).filter(file => file.endsWith('.mp3'));
+        const data = await res.json();
+        if (!data.items) {
+            return NextResponse.json({ files: [] });
+        }
+        
+        // Return full public URLs
+        const files = data.items
+            .filter((item: any) => item.name.endsWith('.mp3'))
+            .map((item: any) => `https://storage.googleapis.com/jjflipbook-gcs-001/${item.name}`);
+            
         return NextResponse.json({ files });
     } catch (error) {
         return NextResponse.json({ files: [] }, { status: 500 });
