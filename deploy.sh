@@ -82,6 +82,22 @@ cd ..
 echo "✅ 사전 역량 검증 완벽 통과! 진짜 클라우드 배포 파이프라인(Phase 1~4)을 시작합니다..."
 
 # 1. 백엔드 빌드 및 배포
+# ========================================
+# [VPC 및 네트워크 보안 옵션 처리]
+# VPC_NETWORK가 명시적으로 설정되어 있지 않거나 'default'인 경우,
+# 서버리스 VPC Egress 및 Internal Ingress 옵션을 적용하지 않습니다.
+# ========================================
+VPC_OPTIONS=""
+INGRESS_OPTIONS="--ingress=all"
+
+if [ -n "$VPC_NETWORK" ] && [ "$VPC_NETWORK" != "default" ]; then
+  VPC_OPTIONS="--network=$VPC_NETWORK --subnet=$VPC_SUBNET --vpc-egress=private-ranges-only"
+  INGRESS_OPTIONS="--ingress=internal"
+  echo "🔒 커스텀 VPC 보안 모드로 배포됩니다. (Network: $VPC_NETWORK)"
+else
+  echo "🔓 퍼블릭 모드로 배포됩니다. (VPC 서버리스 Egress 비활성화)"
+fi
+
 echo "----------------------------------------"
 echo "📦 [1/4] Backend 도커 이미지 빌드 중..."
 echo "----------------------------------------"
@@ -99,10 +115,8 @@ $GCLOUD_PATH run deploy flipbook-backend \
   --memory=2Gi \
   --cpu=2 \
   --no-cpu-throttling \
-  --network=$VPC_NETWORK \
-  --subnet=$VPC_SUBNET \
-  --vpc-egress=private-ranges-only \
-  --ingress=internal \
+  $VPC_OPTIONS \
+  $INGRESS_OPTIONS \
   --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DB_NAME=$FIRESTORE_DB_NAME,GCS_BUCKET_NAME=$GCS_BUCKET_NAME
 
 # 백엔드 URL 추출
@@ -128,12 +142,21 @@ $GCLOUD_PATH run deploy flipbook-frontend \
   --platform managed \
   --region $REGION \
   --allow-unauthenticated \
-  --network=$VPC_NETWORK \
-  --subnet=$VPC_SUBNET \
-  --vpc-egress=private-ranges-only \
+  $VPC_OPTIONS \
   --set-env-vars NEXT_PUBLIC_BACKEND_URL=$BACKEND_URL
 
 FRONTEND_URL=$($GCLOUD_PATH run services describe flipbook-frontend --project=$PROJECT_ID --region $REGION --format 'value(status.url)')
+
+echo "----------------------------------------"
+echo "🔐 [Phase 4.5] Backend CORS 정책 동적 갱신 중..."
+echo "       (Frontend URL: $FRONTEND_URL 허용)"
+echo "----------------------------------------"
+$GCLOUD_PATH run services update flipbook-backend \
+  --project=$PROJECT_ID \
+  --region $REGION \
+  --update-env-vars FRONTEND_URL=$FRONTEND_URL,NEXT_PUBLIC_FRONTEND_URL=$FRONTEND_URL > /dev/null 2>&1
+
+echo "✅ 백엔드 CORS 보안 업데이트 완료!"
 
 echo "========================================"
 echo "🎉 모든 배포가 완료되었습니다!"
