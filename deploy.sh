@@ -101,7 +101,7 @@ $GCLOUD_PATH run deploy flipbook-backend \
   --no-cpu-throttling \
   --network=$VPC_NETWORK \
   --subnet=$VPC_SUBNET \
-  --vpc-egress=all-traffic \
+  --vpc-egress=private-ranges-only \
   --ingress=internal \
   --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DB_NAME=$FIRESTORE_DB_NAME,GCS_BUCKET_NAME=$GCS_BUCKET_NAME
 
@@ -130,7 +130,7 @@ $GCLOUD_PATH run deploy flipbook-frontend \
   --allow-unauthenticated \
   --network=$VPC_NETWORK \
   --subnet=$VPC_SUBNET \
-  --vpc-egress=all-traffic \
+  --vpc-egress=private-ranges-only \
   --set-env-vars NEXT_PUBLIC_BACKEND_URL=$BACKEND_URL
 
 FRONTEND_URL=$($GCLOUD_PATH run services describe flipbook-frontend --project=$PROJECT_ID --region $REGION --format 'value(status.url)')
