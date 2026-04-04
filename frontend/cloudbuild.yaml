@@ -3,6 +3,7 @@ steps:
   args: [ 
     'build', 
     '-t', '${_DOCKER_REPO}/flipbook-frontend', 
+    '--cache-from', '${_DOCKER_REPO}/flipbook-frontend:latest',
     '--build-arg', 'NEXT_PUBLIC_BACKEND_URL=${_NEXT_PUBLIC_BACKEND_URL}', 
     '.' 
   ]

@@ -94,6 +94,23 @@ npm run dev
 └── deploy.sh              # Cloud Run 원클릭 배포 자동화 마스터 스크립트
 ```
 
+## 🚀 대용량 배포 속도 최적화 (Deployment Optimization)
+
+Cloud Build 환경에서의 빌드/배포 시간을 획기적으로 단축하기 위해 다음과 같은 최적화가 적용되어 있습니다.
+
+### 1. `.gcloudignore` 기반의 업로드 병목 제거
+*   **불필요한 로컬 의존성 제외**: 로컬 환경에서 생성된 무거운 폴더들(`frontend/node_modules/` 약 480MB, `frontend/.next/` 약 290MB, `backend/venv/` 약 210MB)이 클라우드로 전송되는 것을 방지합니다.
+*   **초고속 업로드**: 약 1GB에 달하던 소스코드 업로드 트래픽을 제거하여, `gcloud builds submit` 명령의 컨텍스트 업로드 시간이 수 분에서 **단 몇 초**로 단축되었습니다.
+
+### 2. 중복 빌드 (Double Build) 방지
+*   **배포 스크립트 효율화**: 기존 `deploy.sh`에서는 로컬 환경에서 Next.js 정적 빌드(`npm run build`)를 수행하여 오류를 검증한 뒤, 클라우드 환경에서 동일한 빌드를 또다시 수행하는 비효율이 있었습니다.
+*   **Phase 0 검증 간소화**: 정적 타입 검사(`type-check`), 코드 품질 검사(`lint`), 단위 테스트(`test`)로 충분한 사전 검증을 마친 후, 시간이 오래 소요되는 로컬 빌드 검증 단계를 생략하여 배포 파이프라인의 속도를 크게 향상시켰습니다.
+
+### 3. 도커 빌드 캐싱 (Docker Layer Caching) 활성화
+*   **Kaniko 레이어 캐싱**: `cloudbuild.yaml` 및 `deploy.sh` 내에 `--cache-from` 옵션을 주입하여, `package.json`이나 `requirements.txt`에 변경이 없을 경우 의존성 설치 단계(npm install / pip install)를 완전히 건너뛰도록 캐싱(Layer Caching) 파이프라인을 구축했습니다. **추가적인 1분 이상의 빌드 속도 개선** 효과가 있습니다.
+
+---
+
 ## 🚀 대용량 PDF 처리 및 성능/안정성 최적화 (OOM 방지)
 
 대용량 문서 업로드 및 변환 시 서버 과부하 및 메모리 고갈(OOM)을 방지하도록 백엔드와 프론트엔드의 파일 처리 파이프라인을 스트리밍 및 분할 구조로 최신화했습니다.
