@@ -2,8 +2,8 @@ import os
 from google.cloud import storage
 
 # 프로젝트 ID 및 버킷명
-PROJECT_ID = "jwlee-argolis-202104"
-BUCKET_NAME = "jjflipbook-gcs-001"
+PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT", "jwlee-argolis-202104")
+BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "jjflipbook-gcs-001")
 
 def fix_acl():
     print(f"🔄 Setting GCS Bucket {BUCKET_NAME} to Public Read...")
