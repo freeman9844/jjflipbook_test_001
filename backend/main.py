@@ -17,14 +17,22 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
+import logging
+
+# Configure basic logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
 # Google Cloud Storage 및 Firestore 이니셜라이징
 from google.cloud import storage, firestore
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "jjflipbook-gcs-001")
+GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT", "jwlee-argolis-202104")
+FIRESTORE_DB_NAME = os.getenv("FIRESTORE_DB_NAME", "jjflipbook")
 
-storage_client = storage.Client(project=os.getenv("GOOGLE_CLOUD_PROJECT", "jwlee-argolis-202104"))
+storage_client = storage.Client(project=GOOGLE_CLOUD_PROJECT)
 bucket = storage_client.bucket(GCS_BUCKET_NAME)
 
-db = firestore.Client(project=os.getenv("GOOGLE_CLOUD_PROJECT", "jwlee-argolis-202104"), database="jjflipbook")
+db = firestore.Client(project=GOOGLE_CLOUD_PROJECT, database=FIRESTORE_DB_NAME)
 
 from fastapi import Header
 def verify_api_key(x_api_key: str = Header(None)):
@@ -46,7 +54,7 @@ async def lifespan(app: FastAPI):
             password_hash=hash_password(admin_password)
         )
         user_ref.set(admin_user.dict())
-        print("✅ [Lifespan] Default admin user seeded successfully.")
+        logger.info("✅ [Lifespan] Default admin user seeded successfully.")
     yield
 
 app = FastAPI(
@@ -143,17 +151,17 @@ def process_pdf_task(pdf_path: str, book_storage: str, uuid_key: str, date_str: 
             "pdf_url": pdf_url,
             "status": "success"
         })
-        print(f"✅ [Background] Flipbook-{uuid_key} Firestore Updated successfully. ({len(filenames)} pages)")
+        logger.info(f"✅ [Background] Flipbook-{uuid_key} Firestore Updated successfully. ({len(filenames)} pages)")
              
     except Exception as e:
-        print(f"❌ [Background] Error processing PDF-{uuid_key}: {str(e)}")
+        logger.error(f"❌ [Background] Error processing PDF-{uuid_key}: {str(e)}")
         # 실패 상태 Firestore 기록
         try:
              db.collection("flipbooks").document(uuid_key).update({
                   "status": "failed"
              })
         except Exception as fe:
-             print(f"❌ [Background] Failed to update fail status for {uuid_key}: {str(fe)}")
+             logger.error(f"❌ [Background] Failed to update fail status for {uuid_key}: {str(fe)}")
     finally:
         # 4. 로컬 템플러리 스페이스 소거 정리 (Clean up)
         import shutil
@@ -262,7 +270,7 @@ def delete_single_flipbook(uuid_key: str):
                 list(executor.map(lambda b: b.delete(), blobs))
                 
     except Exception as e:
-         print(f"⚠️ [Delete] GCS cleanup failed for book-{uuid_key}: {str(e)}")
+         logger.warning(f"⚠️ [Delete] GCS cleanup failed for book-{uuid_key}: {str(e)}")
 
 @app.delete("/folder/{folder_id}")
 def delete_folder(folder_id: str, validated: bool = Depends(verify_api_key)):
@@ -289,14 +297,8 @@ def get_flipbook(uuid_key: str):
         raise HTTPException(status_code=404, detail="Flipbook not found")
         
     book = doc.to_dict()
-    return {
-        "id": uuid_key,
-        "uuid_key": uuid_key,
-        "title": book.get("title", ""),
-        "page_count": book.get("page_count", 0),
-        "image_urls": book.get("image_urls", []),
-        "pdf_url": book.get("pdf_url", None)
-    }
+    book["id"] = uuid_key
+    return book
 
 @app.get("/flipbook/{uuid_key}/overlays")
 def get_overlays(uuid_key: str):

@@ -40,6 +40,7 @@ export default function Home() {
     
     const [splitPages, setSplitPages] = useState<boolean>(true);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [pollTrigger, setPollTrigger] = useState<number>(0);
 
     const [windowWidth, setWindowWidth] = useState(1200);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -74,20 +75,46 @@ export default function Home() {
     // Polling logic
     useEffect(() => {
         if (!isAuthenticated) return;
-        const isProcessing = books.some(b => b.page_count === 0 && b.status !== 'failed');
+        const processingBooks = books.filter(b => b.page_count === 0 && b.status !== 'failed');
         
-        if (!isProcessing) {
+        if (processingBooks.length === 0) {
             pollDelay.current = 3000;
             return;
         }
 
-        const timerId = setTimeout(() => {
-            fetchAllData();
-            pollDelay.current = Math.min(pollDelay.current * 1.5, 30000);
+        const timerId = setTimeout(async () => {
+            let hasUpdates = false;
+            const updatedBooks = [...books];
+
+            for (const pb of processingBooks) {
+                try {
+                    const res = await fetch(`/api/backend/flipbook/${pb.uuid_key}`);
+                    if (res.ok) {
+                        const updatedBook = await res.json();
+                        if (updatedBook.page_count > 0 || updatedBook.status === 'failed') {
+                            const idx = updatedBooks.findIndex(b => b.uuid_key === pb.uuid_key);
+                            if (idx !== -1) {
+                                updatedBooks[idx] = { ...updatedBooks[idx], ...updatedBook };
+                                hasUpdates = true;
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error("Polling error:", err);
+                }
+            }
+
+            if (hasUpdates) {
+                pollDelay.current = 3000;
+                setBooks(updatedBooks);
+            } else {
+                pollDelay.current = Math.min(pollDelay.current * 1.5, 30000);
+                setPollTrigger(prev => prev + 1); // trigger next poll without re-rendering the whole page heavily
+            }
         }, pollDelay.current);
 
         return () => clearTimeout(timerId);
-    }, [books, isAuthenticated]);
+    }, [books, isAuthenticated, pollTrigger]);
 
     const fetchAllData = async () => {
         try {
@@ -95,6 +122,13 @@ export default function Home() {
                 fetch(`/api/backend/flipbooks`),
                 fetch(`/api/backend/folders`)
             ]);
+
+            if (booksRes.status === 401 || foldersRes.status === 401) {
+                // Server session is invalid or expired
+                localStorage.removeItem("isAuthenticated");
+                setIsAuthenticated(false);
+                return;
+            }
             
             if (booksRes.ok) {
                 const data: Flipbook[] = await booksRes.json();

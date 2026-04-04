@@ -1,9 +1,17 @@
 #!/bin/bash
 
-# 설정 변수
-GCLOUD_PATH="/Users/jungwoonlee/google-cloud-sdk/bin/gcloud"
-PROJECT_ID=$($GCLOUD_PATH config get-value project)
-REGION="asia-northeast3" # 서울 리전 (임의 변경 가능)
+# ========================================
+# [기본 인프라 설정]
+# 이 변수들을 수정하면 프로젝트 이름, DB, VPC 등을 
+# 한 번에 변경하여 배포할 수 있습니다.
+# ========================================
+export GCLOUD_PATH="${GCLOUD_PATH:-/Users/jungwoonlee/google-cloud-sdk/bin/gcloud}"
+export PROJECT_ID="${PROJECT_ID:-$($GCLOUD_PATH config get-value project 2>/dev/null)}"
+export REGION="${REGION:-asia-northeast3}" # 서울 리전 (임의 변경 가능)
+export FIRESTORE_DB_NAME="${FIRESTORE_DB_NAME:-jjflipbook}"
+export GCS_BUCKET_NAME="${GCS_BUCKET_NAME:-jjflipbook-gcs-001}"
+export VPC_NETWORK="${VPC_NETWORK:-jwlee-vpc-001}"
+export VPC_SUBNET="${VPC_SUBNET:-jwlee-vpc-001}"
 
 if [ -z "$PROJECT_ID" ]; then
   echo "❌ gcloud 프로젝트 ID를 찾을 수 없습니다. gcloud config set project [ID]를 먼저 실행하세요."
@@ -18,13 +26,13 @@ echo "----------------------------------------"
 
 # 1. 백엔드 메모리 단위 테스트 (TestClient)
 echo "▶ Checking & Installing Backend Local Test Dependencies..."
-if ! python3 -c "import pytest, fastapi, bcrypt" &> /dev/null; then
+if ! .venv/bin/python3 -c "import pytest, fastapi, bcrypt" &> /dev/null; then
   echo "📦 패키지 의존성이 누락되었습니다. backend/requirements.txt 를 설치합니다..."
-  uv pip install -r backend/requirements.txt --quiet --index-url https://pypi.org/simple
+  .venv/bin/pip install -r backend/requirements.txt --quiet --index-url https://pypi.org/simple
 fi
 
 echo "▶ Running Backend Local Tests..."
-PYTHONPATH=./backend python3 -m pytest backend/tests/test_api_local.py -v
+PYTHONPATH=./backend .venv/bin/python3 -m pytest backend/tests/test_api_local.py -v
 if [ $? -ne 0 ]; then
   echo "❌ [PRE-FLIGHT] 백엔드 오프라인 단위 테스트 실패! 배포를 전면 취소합니다."
   exit 1
@@ -89,10 +97,11 @@ $GCLOUD_PATH run deploy flipbook-backend \
   --memory=2Gi \
   --cpu=2 \
   --no-cpu-throttling \
-  --network=jwlee-vpc-001 \
-  --subnet=jwlee-vpc-001 \
+  --network=$VPC_NETWORK \
+  --subnet=$VPC_SUBNET \
   --vpc-egress=all-traffic \
-  --ingress=internal
+  --ingress=internal \
+  --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DB_NAME=$FIRESTORE_DB_NAME,GCS_BUCKET_NAME=$GCS_BUCKET_NAME
 
 # 백엔드 URL 추출
 BACKEND_URL=$($GCLOUD_PATH run services describe flipbook-backend --region $REGION --format 'value(status.url)')
@@ -115,8 +124,8 @@ $GCLOUD_PATH run deploy flipbook-frontend \
   --platform managed \
   --region $REGION \
   --allow-unauthenticated \
-  --network=jwlee-vpc-001 \
-  --subnet=jwlee-vpc-001 \
+  --network=$VPC_NETWORK \
+  --subnet=$VPC_SUBNET \
   --vpc-egress=all-traffic \
   --set-env-vars NEXT_PUBLIC_BACKEND_URL=$BACKEND_URL
 
@@ -131,6 +140,9 @@ echo "========================================"
 echo "----------------------------------------"
 echo "🧹 [Phase 5] 테스트 정화 (Garbage Collection) 스크립트 실행 중..."
 echo "----------------------------------------"
+export GOOGLE_CLOUD_PROJECT=$PROJECT_ID
+export FIRESTORE_DB_NAME=$FIRESTORE_DB_NAME
+export GCS_BUCKET_NAME=$GCS_BUCKET_NAME
 python3 backend/scripts/cleanup_test_data.py
 if [ $? -ne 0 ]; then
   echo "⚠️ [CLEANUP WARNING] 테스트 더미 데이터 삭제 중 일부 오류가 발생했을 수 있습니다 (비치명적 경고)"
