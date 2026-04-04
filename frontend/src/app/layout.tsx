@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -14,7 +14,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "JJFlipBook - PDF 플립북 뷰어",
-  description: "PDF 문서를 웹에서 편안한 3D 플립 넘김 책자로 감상할 수 있는 스마트 뷰어 서비스입니다.",
+  description: "PDF 문서를 웹에서 편안한 3D 플립 넘김 책자로 감상할 수 있는  스마트 뷰어 서비스입니다.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 import AuthGuard from "../components/AuthGuard";
