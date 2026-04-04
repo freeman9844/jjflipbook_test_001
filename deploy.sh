@@ -147,7 +147,7 @@ echo "----------------------------------------"
 export GOOGLE_CLOUD_PROJECT=$PROJECT_ID
 export FIRESTORE_DB_NAME=$FIRESTORE_DB_NAME
 export GCS_BUCKET_NAME=$GCS_BUCKET_NAME
-python3 backend/scripts/cleanup_test_data.py
+.venv/bin/python3 backend/scripts/cleanup_test_data.py
 if [ $? -ne 0 ]; then
   echo "⚠️ [CLEANUP WARNING] 테스트 더미 데이터 삭제 중 일부 오류가 발생했을 수 있습니다 (비치명적 경고)"
 fi
