@@ -5,6 +5,7 @@ pdf2image
 google-auth
 google-auth-oauthlib
 google-auth-httplib2
+pyOpenSSL
 python-dotenv
 python-multipart
 Pillow

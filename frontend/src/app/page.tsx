@@ -31,6 +31,19 @@ export default function Home() {
     // UI 액션 상태
     const [isMounted, setIsMounted] = useState<boolean>(false);
     const [uploading, setUploadLoading] = useState(false);
+    const [uploadDots, setUploadDots] = useState("");
+
+    // 업로드 중 동적 애니메이션 (업로드 중, 업로드 중., 업로드 중..)
+    useEffect(() => {
+        if (!uploading) {
+            setUploadDots("");
+            return;
+        }
+        const interval = setInterval(() => {
+            setUploadDots(prev => prev.length >= 3 ? "" : prev + ".");
+        }, 400);
+        return () => clearInterval(interval);
+    }, [uploading]);
     
     // 모달 및 설정 상태
     const [deletingUuid, setDeletingUuid] = useState<string | null>(null); 
@@ -364,7 +377,7 @@ export default function Home() {
                             onChange={handleFileChange} 
                         />
                         <button style={styles.uploadBtn} onClick={handleUploadClick} disabled={uploading}>
-                            {uploading ? "업로드 중..." : "+ PDF 업로드"}
+                            {uploading ? `업로드 중${uploadDots}` : "+ PDF 업로드"}
                         </button>
                     </div>
                 </div>
