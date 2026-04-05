@@ -1,10 +1,9 @@
 import os
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File, Query
-from database import db, GOOGLE_CLOUD_PROJECT
+from database import db
 from models import Flipbook, Overlay
 from utils import verify_api_key
 from services.flipbook_service import process_pdf_task, delete_single_flipbook
-from cloud_tasks import enqueue_pdf_processing_task
 import aiofiles
 from datetime import datetime, timezone
 
@@ -14,6 +13,7 @@ STORAGE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 
 @router.post("/upload")
 async def upload_pdf(
+    background_tasks: BackgroundTasks, 
     file: UploadFile = File(...),
     split_pages: bool = Query(True),
     folder_id: str = Query(None),
@@ -36,38 +36,12 @@ async def upload_pdf(
     async with aiofiles.open(pdf_path, 'wb') as f:
         while chunk := await file.read(1024 * 1024):
             await f.write(chunk)
-            
-    worker_url = os.getenv("WORKER_URL")
-    if worker_url:
-        location = os.getenv("REGION", "asia-northeast3")
-        queue_name = os.getenv("TASK_QUEUE_NAME", "pdf-worker-queue")
         
-        payload = {
-            "pdf_path": pdf_path,
-            "book_storage": book_dir,
-            "uuid_key": book.uuid_key,
-            "date_str": date_str,
-            "split_pages": split_pages
-        }
-        
-        try:
-            enqueue_pdf_processing_task(
-                project_id=GOOGLE_CLOUD_PROJECT,
-                location=location,
-                queue=queue_name,
-                worker_url=f"{worker_url}/worker/process-pdf",
-                payload=payload
-            )
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to enqueue processing task: {str(e)}")
-    else:
-        import threading
-        thread = threading.Thread(target=process_pdf_task, args=(pdf_path, book_dir, book.uuid_key, date_str, split_pages))
-        thread.start()
+    background_tasks.add_task(process_pdf_task, pdf_path, book_dir, book.uuid_key, date_str, split_pages)
     
     return {
          "status": "ok", 
-         "message": "PDF uploaded successfully. Processing queued.", 
+         "message": "PDF uploaded successfully. Processing background.", 
          "book_id": book.uuid_key
     }
 
@@ -125,5 +99,9 @@ def update_overlays(uuid_key: str, overlays: list[dict]):
 
 @router.delete("/flipbook/{uuid_key}")
 def delete_flipbook(uuid_key: str, validated: bool = Depends(verify_api_key)):
+    doc_ref = db.collection("flipbooks").document(uuid_key)
+    if not doc_ref.get().exists:
+        raise HTTPException(status_code=404, detail="Flipbook not found")
+        
     delete_single_flipbook(uuid_key)
-    return {"status": "ok", "message": f"Flipbook {uuid_key} deleted"}
+    return {"status": "ok", "message": "Flipbook deleted successfully"}
