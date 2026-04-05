@@ -8,7 +8,7 @@
 
 echo "========================================"
 echo "🚀 배포할 타겟 환경을 선택하세요:"
-echo "  1) jwlee-test-project-01 (개인 프로젝트 망)"
+echo "  1) jwlee-test-project-01 (개인 프로젝트 망 - 보안 인프라 적용됨)"
 echo "  2) jwlee-argolis-202104  (운영 VPC 사설망)"
 echo "========================================"
 read -p "번호 선택 (1 또는 2): " project_choice
@@ -16,8 +16,9 @@ read -p "번호 선택 (1 또는 2): " project_choice
 if [ "$project_choice" = "1" ]; then
     export PROJECT_ID="jwlee-test-project-01"
     export GCS_BUCKET_NAME="jjflipbook-gcs-0001"
-    export VPC_NETWORK="default"
-    export VPC_SUBNET="default"
+    # 개선: 방금 구축한 내부망 VPC 인프라 적용
+    export VPC_NETWORK="jwlee-vpc-001"
+    export VPC_SUBNET="jwlee-vpc-001"
     export DOCKER_REPO="asia-northeast3-docker.pkg.dev/$PROJECT_ID/jwlee-repo"
     export REGION="asia-northeast3"
     export FIRESTORE_DB_NAME="jjflipbook"
@@ -26,6 +27,7 @@ elif [ "$project_choice" = "2" ]; then
     export GCS_BUCKET_NAME="jjflipbook-gcs-001"
     export VPC_NETWORK="jwlee-vpc-001"
     export VPC_SUBNET="jwlee-vpc-001"
+    # Note: gcr.io는 Deprecated 예정이므로 차후 Artifact Registry로 전환 권장
     export DOCKER_REPO="gcr.io/$PROJECT_ID"
     export REGION="asia-northeast3"
     export FIRESTORE_DB_NAME="jjflipbook"
@@ -65,55 +67,35 @@ fi
 echo "▶ Running Frontend TDD & Build Checks..."
 cd frontend
 
-# 필수 의존성 재확인 (퍼블릭 NPM 레지스트리 강제 지정으로 사내망 블록 우회, 의존성 충돌 무시)
-npm install --quiet --no-fund --no-audit --legacy-peer-deps --registry=https://registry.npmjs.org/
+export NPM_CONFIG_UPDATE_NOTIFIER=false
+export NPM_CONFIG_AUDIT=false
+export NPM_CONFIG_FUND=false
+npm install --quiet --legacy-peer-deps --loglevel=error --registry=https://registry.npmjs.org/
 
 echo "   [2-1] TypeScript Strict Type-Check..."
-npm run type-check
-if [ $? -ne 0 ]; then
-  echo "❌ [PRE-FLIGHT] 프론트엔드 정적 타입 검사 탈락! (Type-check failed)"
-  cd ..
-  exit 1
-fi
+npm run type-check || { echo "❌ [PRE-FLIGHT] 프론트엔드 정적 타입 검사 탈락!"; exit 1; }
 
 echo "   [2-2] ESLint & Prettier Code-Smell Check..."
-npm run lint
-if [ $? -ne 0 ]; then
-  echo "❌ [PRE-FLIGHT] 프론트엔드 코드 품질 검사 탈락! (ESLint failed)"
-  cd ..
-  exit 1
-fi
+npm run lint || { echo "❌ [PRE-FLIGHT] 프론트엔드 코드 품질 검사 탈락!"; exit 1; }
 
 echo "   [2-3] Jest Component Unit Test..."
-npm run test
-if [ $? -ne 0 ]; then
-  echo "❌ [PRE-FLIGHT] 프론트엔드 단위 UI 테스트 탈락! (AuthGuard 등 렌더링 검사 실패)"
-  cd ..
-  exit 1
-fi
+npm run test || { echo "❌ [PRE-FLIGHT] 프론트엔드 단위 UI 테스트 탈락!"; exit 1; }
 
-# echo "   [2-4] Next.js SSR Static Build Check..."
-# npm run build
-# if [ $? -ne 0 ]; then
-#   echo "❌ [PRE-FLIGHT] 프론트엔드 로컬 빌드/컴파일 실패! 배포 파이프라인을 중단합니다."
-#   cd ..
-#   exit 1
-# fi
+echo "   [2-4] Next.js SSR Static Build Check..."
+npm run build || { echo "❌ [PRE-FLIGHT] 프론트엔드 로컬 빌드/컴파일 실패!"; exit 1; }
 cd ..
 
 echo "✅ 사전 역량 검증 완벽 통과! 진짜 클라우드 배포 파이프라인(Phase 1~4)을 시작합니다..."
 
-# 1. 백엔드 빌드 및 배포
 # ========================================
 # [VPC 및 네트워크 보안 옵션 처리]
-# VPC_NETWORK가 명시적으로 설정되어 있지 않거나 'default'인 경우,
-# 서버리스 VPC Egress 및 Internal Ingress 옵션을 적용하지 않습니다.
 # ========================================
 VPC_OPTIONS=""
 INGRESS_OPTIONS="--ingress=all"
 
 if [ -n "$VPC_NETWORK" ] && [ "$VPC_NETWORK" != "default" ]; then
-  VPC_OPTIONS="--network=$VPC_NETWORK --subnet=$VPC_SUBNET --vpc-egress=private-ranges-only"
+  # 개선: 내부망(Cloud Run) 라우팅을 위해 private-ranges-only 대신 all-traffic 사용 필수
+  VPC_OPTIONS="--network=$VPC_NETWORK --subnet=$VPC_SUBNET --vpc-egress=all-traffic"
   INGRESS_OPTIONS="--ingress=internal"
   echo "🔒 커스텀 VPC 보안 모드로 배포됩니다. (Network: $VPC_NETWORK)"
 else
@@ -123,15 +105,12 @@ fi
 echo "----------------------------------------"
 echo "📦 [1/4] Backend 도커 이미지 빌드 중..."
 echo "----------------------------------------"
-# Docker 레이어 캐싱 적용으로 속도 향상
-$GCLOUD_PATH builds submit backend \
-  --project=$PROJECT_ID \
-  --tag $DOCKER_REPO/flipbook-backend:latest
+$GCLOUD_PATH builds submit backend --project=$PROJECT_ID --tag $DOCKER_REPO/flipbook-backend || { echo "❌ Backend 빌드 실패!"; exit 1; }
 
 echo "----------------------------------------"
-echo "🌐 [2-1/4] Backend Worker Cloud Run 배포 중... (CPU Throttling 비활성화, 2Gi/2Core)"
+echo "🌐 [2/4] Backend Cloud Run 배포 중..."
 echo "----------------------------------------"
-$GCLOUD_PATH run deploy flipbook-worker \
+$GCLOUD_PATH run deploy flipbook-backend \
   --project=$PROJECT_ID \
   --image $DOCKER_REPO/flipbook-backend \
   --platform managed \
@@ -140,42 +119,14 @@ $GCLOUD_PATH run deploy flipbook-worker \
   --memory=2Gi \
   --cpu=2 \
   --no-cpu-throttling \
-  --min-instances=0 \
-  --max-instances=10 \
   $VPC_OPTIONS \
   $INGRESS_OPTIONS \
-  --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DB_NAME=$FIRESTORE_DB_NAME,GCS_BUCKET_NAME=$GCS_BUCKET_NAME
+  --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DB_NAME=$FIRESTORE_DB_NAME,GCS_BUCKET_NAME=$GCS_BUCKET_NAME || { echo "❌ Backend 배포 실패!"; exit 1; }
 
-WORKER_URL=$($GCLOUD_PATH run services describe flipbook-worker --project=$PROJECT_ID --region $REGION --format 'value(status.url)')
-echo "✅ Worker URL 발급 완료: $WORKER_URL"
+# 백엔드 URL 추출
+BACKEND_URL=$($GCLOUD_PATH run services describe flipbook-backend --project=$PROJECT_ID --region $REGION --format 'value(status.url)')
+echo "✅ Backend URL 발급 완료: $BACKEND_URL"
 
-echo "----------------------------------------"
-echo "🌐 [2-2/4] Backend API Cloud Run 배포 중... (CPU Throttling 활성화, 512Mi/1Core)"
-echo "----------------------------------------"
-$GCLOUD_PATH run deploy flipbook-api \
-  --project=$PROJECT_ID \
-  --image $DOCKER_REPO/flipbook-backend \
-  --platform managed \
-  --region $REGION \
-  --allow-unauthenticated \
-  --memory=512Mi \
-  --cpu=1 \
-  --min-instances=0 \
-  --max-instances=20 \
-  $VPC_OPTIONS \
-  $INGRESS_OPTIONS \
-  --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DB_NAME=$FIRESTORE_DB_NAME,GCS_BUCKET_NAME=$GCS_BUCKET_NAME,WORKER_URL=$WORKER_URL,TASK_QUEUE_NAME=pdf-worker-queue,REGION=$REGION
-
-BACKEND_URL=$($GCLOUD_PATH run services describe flipbook-api --project=$PROJECT_ID --region $REGION --format 'value(status.url)')
-echo "✅ Backend API URL 발급 완료: $BACKEND_URL"
-
-echo "----------------------------------------"
-echo "🗄️ [2-3/4] Cloud Tasks Queue (pdf-worker-queue) 생성 확인 중..."
-echo "----------------------------------------"
-$GCLOUD_PATH tasks queues describe pdf-worker-queue --project=$PROJECT_ID --location=$REGION || \
-$GCLOUD_PATH tasks queues create pdf-worker-queue --project=$PROJECT_ID --location=$REGION
-
-# 2. 프론트엔드 빌드 및 배포
 echo "----------------------------------------"
 echo "📦 [3/4] Frontend 도커 이미지 빌드 중..."
 echo "       (Backend URL: $BACKEND_URL 주입)"
@@ -183,7 +134,7 @@ echo "----------------------------------------"
 $GCLOUD_PATH builds submit frontend \
   --project=$PROJECT_ID \
   --config frontend/cloudbuild.yaml \
-  --substitutions _NEXT_PUBLIC_BACKEND_URL=$BACKEND_URL,_DOCKER_REPO=$DOCKER_REPO
+  --substitutions _NEXT_PUBLIC_BACKEND_URL=$BACKEND_URL,_DOCKER_REPO=$DOCKER_REPO || { echo "❌ Frontend 빌드 실패!"; exit 1; }
 
 echo "----------------------------------------"
 echo "🌐 [4/4] Frontend Cloud Run 배포 중..."
@@ -195,7 +146,7 @@ $GCLOUD_PATH run deploy flipbook-frontend \
   --region $REGION \
   --allow-unauthenticated \
   $VPC_OPTIONS \
-  --set-env-vars NEXT_PUBLIC_BACKEND_URL=$BACKEND_URL
+  --set-env-vars NEXT_PUBLIC_BACKEND_URL=$BACKEND_URL || { echo "❌ Frontend 배포 실패!"; exit 1; }
 
 FRONTEND_URL=$($GCLOUD_PATH run services describe flipbook-frontend --project=$PROJECT_ID --region $REGION --format 'value(status.url)')
 
@@ -203,10 +154,10 @@ echo "----------------------------------------"
 echo "🔐 [Phase 4.5] Backend CORS 정책 동적 갱신 중..."
 echo "       (Frontend URL: $FRONTEND_URL 허용)"
 echo "----------------------------------------"
-$GCLOUD_PATH run services update flipbook-api \
+$GCLOUD_PATH run services update flipbook-backend \
   --project=$PROJECT_ID \
   --region $REGION \
-  --update-env-vars FRONTEND_URL=$FRONTEND_URL,NEXT_PUBLIC_FRONTEND_URL=$FRONTEND_URL > /dev/null 2>&1
+  --update-env-vars FRONTEND_URL=$FRONTEND_URL,NEXT_PUBLIC_FRONTEND_URL=$FRONTEND_URL > /dev/null 2>&1 || echo "⚠️ 백엔드 CORS 업데이트 중 일부 경고 발생"
 
 echo "✅ 백엔드 CORS 보안 업데이트 완료!"
 
@@ -222,9 +173,6 @@ echo "----------------------------------------"
 export GOOGLE_CLOUD_PROJECT=$PROJECT_ID
 export FIRESTORE_DB_NAME=$FIRESTORE_DB_NAME
 export GCS_BUCKET_NAME=$GCS_BUCKET_NAME
-backend/venv/bin/python3 backend/scripts/cleanup_test_data.py
-if [ $? -ne 0 ]; then
-  echo "⚠️ [CLEANUP WARNING] 테스트 더미 데이터 삭제 중 일부 오류가 발생했을 수 있습니다 (비치명적 경고)"
-fi
+backend/venv/bin/python3 backend/scripts/cleanup_test_data.py || echo "⚠️ [CLEANUP WARNING] 테스트 데이터 삭제 오류 (비치명적)"
 
 echo "🚀 배포 파이프라인(TDD 내장)이 완벽하게 종료되었습니다!"

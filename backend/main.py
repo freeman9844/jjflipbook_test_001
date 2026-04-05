@@ -10,7 +10,7 @@ from models import User
 from utils import hash_password
 
 # import routers
-from routers import auth, flipbooks, folders
+from routers import auth, flipbooks, folders, worker
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -54,6 +54,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(flipbooks.router)
 app.include_router(folders.router)
+app.include_router(worker.router)
 
 STORAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "storage")
 os.makedirs(STORAGE_DIR, exist_ok=True)
