@@ -6,8 +6,9 @@ from utils import verify_api_key
 client = TestClient(app)
 
 @patch('routers.flipbooks.enqueue_pdf_processing_task')
-def test_upload_pdf_uses_cloud_tasks(mock_enqueue, tmp_path):
+def test_upload_pdf_uses_cloud_tasks(mock_enqueue, tmp_path, monkeypatch):
     app.dependency_overrides[verify_api_key] = lambda: True
+    monkeypatch.setenv("WORKER_URL", "http://mock-worker")
     
     # Create a dummy pdf file
     pdf_file = tmp_path / "dummy.pdf"
