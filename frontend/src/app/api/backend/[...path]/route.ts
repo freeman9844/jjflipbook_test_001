@@ -81,6 +81,9 @@ export async function POST(
         const contentType = request.headers.get('content-type') || 'application/json';
         const apiKey = process.env.INTERNAL_API_KEY || 'secret_dev_key';
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout
+
         const res = await fetch(url, {
             method: 'POST',
             body: request.body, 
@@ -88,9 +91,12 @@ export async function POST(
                 'Content-Type': contentType,
                 'X-API-Key': apiKey
             },
+            signal: controller.signal,
             // @ts-ignore
             duplex: 'half'
         } as any);
+
+        clearTimeout(timeoutId);
 
         const responseContentType = res.headers.get('content-type') || '';
         let data;
