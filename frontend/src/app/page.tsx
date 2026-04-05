@@ -168,8 +168,8 @@ export default function Home() {
                 body: formData
             });
             if (res.ok) {
-                alert("🎉 PDF 업로드가 수신되었습니다. 백그라운드 변환이 시작됩니다.");
-                setTimeout(() => fetchAllData(), 3000); 
+                alert("🎉 PDF 업로드 및 변환이 완료되었습니다. 썸네일을 불러옵니다.");
+                setTimeout(() => fetchAllData(), 5000); // 5 seconds to ensure GCS objects are accessible
             } else {
                 alert("❌ 업로드 처리 실패가 발생했습니다.");
             }
