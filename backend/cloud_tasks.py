@@ -19,6 +19,7 @@ def enqueue_pdf_processing_task(project_id: str, location: str, queue: str, work
             "url": worker_url,
             "headers": {"Content-type": "application/json"},
             "body": json.dumps(payload).encode(),
+            "oidc_token": {"service_account_email": f"{project_id}@appspot.gserviceaccount.com"}
         }
     }
     
