@@ -332,7 +332,7 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
 }
 
 const getStyles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
-    container: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', height: '100vh', width: '100vw', backgroundColor: '#f5f7f9', color: '#1a1a1a', fontFamily: 'system-ui, -apple-system, sans-serif', overflow: 'hidden' },
+    container: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', height: '100dvh', width: '100vw', backgroundColor: '#f5f7f9', color: '#1a1a1a', fontFamily: 'system-ui, -apple-system, sans-serif', overflow: 'hidden' },
     sidebar: { width: isMobile ? '100%' : '220px', backgroundColor: 'white', borderRight: isMobile ? 'none' : '1px solid #e4e7eb', borderBottom: isMobile ? '1px solid #e4e7eb' : 'none', display: 'flex', flexDirection: isMobile ? 'row' : 'column', padding: isMobile ? '16px' : '32px 16px', boxSizing: 'border-box', gap: isMobile ? '16px' : '32px', zIndex: 10 },
     logoArea: { display: 'flex', alignItems: 'center', paddingBottom: isMobile ? '0' : '16px', borderBottom: isMobile ? 'none' : '1px solid #f1f3f5', marginLeft: '8px' },
     logoText: { fontSize: '20px', fontWeight: 'bold', color: '#1a1a1a', letterSpacing: '-0.5px' },
