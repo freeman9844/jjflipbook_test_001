@@ -27,24 +27,35 @@ async def upload_pdf(
     
     data = book.model_dump()
     data["date_folder"] = date_str
+    # 상태를 'uploading'으로 초기 세팅 (옵션)
+    data["status"] = "uploading"
     db.collection("flipbooks").document(book.uuid_key).set(data)
     
     book_dir = os.path.join(STORAGE_DIR, book.uuid_key)
     os.makedirs(book_dir, exist_ok=True)
     
+    # 1. 로컬에 임시 저장 (FastAPI UploadFile 처리를 위함)
     pdf_path = os.path.join(book_dir, "original.pdf")
     async with aiofiles.open(pdf_path, 'wb') as f:
         while chunk := await file.read(1024 * 1024):
             await f.write(chunk)
+            
+    # [NEW] 2. 로컬에 저장된 원본을 GCS에 즉시 업로드 (Claim-Check 패턴)
+    from database import bucket
+    pdf_blob_name = f"flipbooks/{date_str}/{book.uuid_key}/original.pdf"
+    pdf_blob = bucket.blob(pdf_blob_name)
+    pdf_blob.upload_from_filename(pdf_path)
+    
+    # DB 상태 업데이트
+    db.collection("flipbooks").document(book.uuid_key).update({"status": "processing"})
             
     worker_url = os.getenv("WORKER_URL")
     if worker_url:
         location = os.getenv("REGION", "asia-northeast3")
         queue_name = os.getenv("TASK_QUEUE_NAME", "pdf-worker-queue")
         
+        # Payload에서 로컬 경로(pdf_path, book_storage) 제거
         payload = {
-            "pdf_path": pdf_path,
-            "book_storage": book_dir,
             "uuid_key": book.uuid_key,
             "date_str": date_str,
             "split_pages": split_pages
@@ -59,15 +70,24 @@ async def upload_pdf(
                 payload=payload
             )
         except Exception as e:
+            # 실패 시 상태 롤백
+            db.collection("flipbooks").document(book.uuid_key).update({"status": "failed", "error_message": "Task enqueue failed"})
             raise HTTPException(status_code=500, detail=f"Failed to enqueue processing task: {str(e)}")
     else:
         import threading
-        thread = threading.Thread(target=process_pdf_task, args=(pdf_path, book_dir, book.uuid_key, date_str, split_pages))
+        thread = threading.Thread(target=process_pdf_task, args=(book.uuid_key, date_str, split_pages))
         thread.start()
+        
+    # (Optional) 임시 파일 삭제 로직 추가 가능하지만, Worker가 다른 컨테이너라면 여기서 지워도 됨. 
+    # 로컬 개발 환경(동일 프로세스)을 위해 일단 놔두거나 분기 처리.
+    if worker_url:
+        import shutil
+        if os.path.exists(book_dir):
+            shutil.rmtree(book_dir)
     
     return {
          "status": "ok", 
-         "message": "PDF uploaded successfully. Processing queued.", 
+         "message": "PDF uploaded to GCS successfully. Processing queued.", 
          "book_id": book.uuid_key
     }
 
