@@ -16,7 +16,7 @@ PDF 문서를 업로드하여 웹 브라우저에서 실제 책을 넘기는 듯
 | **Backend** | `FastAPI (Python 3.11)`, `poppler-utils`, `pdf2image` (PDF 분할 변환) |
 | **Database** | `Google Cloud Firestore` (NoSQL - 오버레이 및 메타 영구 보존) |
 | **Storage** | `Google Cloud Storage` (변환된 대형 페이지 이미지 저장소 - 날짜별 폴더 구조화) |
-| **Compute** | `Google Cloud Run` (서버리스 컨테이너 수직 탑재 배포) |
+| **Compute** | `Google Cloud Run` (단일 통합 컨테이너, FastAPI BackgroundTasks 비동기 처리) |
 
 ---
 
