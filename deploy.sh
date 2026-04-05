@@ -129,9 +129,9 @@ $GCLOUD_PATH builds submit backend \
   --tag $DOCKER_REPO/flipbook-backend:latest
 
 echo "----------------------------------------"
-echo "🌐 [2-1/4] Backend Worker Cloud Run 배포 중... (CPU Throttling 비활성화, 2Gi/2Core)"
+echo "🌐 [2/4] Backend Cloud Run 배포 중..."
 echo "----------------------------------------"
-$GCLOUD_PATH run deploy flipbook-worker \
+$GCLOUD_PATH run deploy flipbook-backend \
   --project=$PROJECT_ID \
   --image $DOCKER_REPO/flipbook-backend \
   --platform managed \
@@ -140,40 +140,13 @@ $GCLOUD_PATH run deploy flipbook-worker \
   --memory=2Gi \
   --cpu=2 \
   --no-cpu-throttling \
-  --min-instances=0 \
-  --max-instances=10 \
   $VPC_OPTIONS \
   $INGRESS_OPTIONS \
   --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DB_NAME=$FIRESTORE_DB_NAME,GCS_BUCKET_NAME=$GCS_BUCKET_NAME
 
-WORKER_URL=$($GCLOUD_PATH run services describe flipbook-worker --project=$PROJECT_ID --region $REGION --format 'value(status.url)')
-echo "✅ Worker URL 발급 완료: $WORKER_URL"
-
-echo "----------------------------------------"
-echo "🌐 [2-2/4] Backend API Cloud Run 배포 중... (CPU Throttling 활성화, 512Mi/1Core)"
-echo "----------------------------------------"
-$GCLOUD_PATH run deploy flipbook-api \
-  --project=$PROJECT_ID \
-  --image $DOCKER_REPO/flipbook-backend \
-  --platform managed \
-  --region $REGION \
-  --allow-unauthenticated \
-  --memory=512Mi \
-  --cpu=1 \
-  --min-instances=0 \
-  --max-instances=20 \
-  $VPC_OPTIONS \
-  $INGRESS_OPTIONS \
-  --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DB_NAME=$FIRESTORE_DB_NAME,GCS_BUCKET_NAME=$GCS_BUCKET_NAME,WORKER_URL=$WORKER_URL,TASK_QUEUE_NAME=pdf-worker-queue,REGION=$REGION
-
-BACKEND_URL=$($GCLOUD_PATH run services describe flipbook-api --project=$PROJECT_ID --region $REGION --format 'value(status.url)')
-echo "✅ Backend API URL 발급 완료: $BACKEND_URL"
-
-echo "----------------------------------------"
-echo "🗄️ [2-3/4] Cloud Tasks Queue (pdf-worker-queue) 생성 확인 중..."
-echo "----------------------------------------"
-$GCLOUD_PATH tasks queues describe pdf-worker-queue --project=$PROJECT_ID --location=$REGION || \
-$GCLOUD_PATH tasks queues create pdf-worker-queue --project=$PROJECT_ID --location=$REGION
+# 백엔드 URL 추출
+BACKEND_URL=$($GCLOUD_PATH run services describe flipbook-backend --project=$PROJECT_ID --region $REGION --format 'value(status.url)')
+echo "✅ Backend URL 발급 완료: $BACKEND_URL"
 
 # 2. 프론트엔드 빌드 및 배포
 echo "----------------------------------------"
@@ -203,7 +176,7 @@ echo "----------------------------------------"
 echo "🔐 [Phase 4.5] Backend CORS 정책 동적 갱신 중..."
 echo "       (Frontend URL: $FRONTEND_URL 허용)"
 echo "----------------------------------------"
-$GCLOUD_PATH run services update flipbook-api \
+$GCLOUD_PATH run services update flipbook-backend \
   --project=$PROJECT_ID \
   --region $REGION \
   --update-env-vars FRONTEND_URL=$FRONTEND_URL,NEXT_PUBLIC_FRONTEND_URL=$FRONTEND_URL > /dev/null 2>&1
