@@ -16,7 +16,7 @@ This project is a multi-layer serverless application powered massively by the Go
 | **Backend** | `FastAPI (Python 3.11)`, `poppler-utils`, `pdf2image` (PDF splitting/conversion) |
 | **Database** | `Google Cloud Firestore` (NoSQL - persistent storage for overlays and meta) |
 | **Storage** | `Google Cloud Storage` (Storage for converted large page images - organized by date folders) |
-| **Compute** | `Google Cloud Run` (Single unified container, FastAPI BackgroundTasks async processing) |
+| **Compute** | `Google Cloud Run` (Single unified container, CPU Request-based, synchronous processing) |
 
 ---
 
