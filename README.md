@@ -18,6 +18,8 @@ PDF 문서를 업로드하여 웹 브라우저에서 실제 책을 넘기는 듯
 | **Storage** | `Google Cloud Storage` (변환된 대형 페이지 이미지 저장소 - 날짜별 폴더 구조화) |
 | **Compute** | `Google Cloud Run` (단일 통합 컨테이너, CPU Request-based, 동기식 변환 대기) |
 
+> 💡 **참고:** 변환된 이미지가 Google Cloud Storage(GCS)에 업로드된 직후 권한이 전파되는 시간(Propagation Time)을 고려하여, 프론트엔드는 업로드 성공 응답 수신 후 약 5초의 지연(Delay)을 두고 썸네일과 데이터를 로드하도록 최적화되어 있습니다.
+
 ---
 
 ## 🏃 로컬 구동 방법

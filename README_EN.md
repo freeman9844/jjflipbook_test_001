@@ -18,6 +18,8 @@ This project is a multi-layer serverless application powered massively by the Go
 | **Storage** | `Google Cloud Storage` (Storage for converted large page images - organized by date folders) |
 | **Compute** | `Google Cloud Run` (Single unified container, CPU Request-based, synchronous processing) |
 
+> 💡 **Note:** To account for Google Cloud Storage (GCS) permission propagation time immediately after image upload, the frontend is optimized to wait approximately 5 seconds after receiving a successful upload response before loading thumbnails and data.
+
 ---
 
 ## 🏃 Local Execution Guide
