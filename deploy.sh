@@ -139,7 +139,7 @@ $GCLOUD_PATH run deploy flipbook-backend \
   --allow-unauthenticated \
   --memory=2Gi \
   --cpu=2 \
-  --no-cpu-throttling \
+  --timeout=600 \
   $VPC_OPTIONS \
   $INGRESS_OPTIONS \
   --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DB_NAME=$FIRESTORE_DB_NAME,GCS_BUCKET_NAME=$GCS_BUCKET_NAME

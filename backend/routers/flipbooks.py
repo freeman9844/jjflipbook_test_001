@@ -11,9 +11,10 @@ router = APIRouter(tags=["Flipbooks"])
 
 STORAGE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "storage")
 
+from fastapi.concurrency import run_in_threadpool
+
 @router.post("/upload")
 async def upload_pdf(
-    background_tasks: BackgroundTasks, 
     file: UploadFile = File(...),
     split_pages: bool = Query(True),
     folder_id: str = Query(None),
@@ -36,15 +37,16 @@ async def upload_pdf(
     async with aiofiles.open(pdf_path, 'wb') as f:
         while chunk := await file.read(1024 * 1024):
             await f.write(chunk)
-        
-    background_tasks.add_task(process_pdf_task, pdf_path, book_dir, book.uuid_key, date_str, split_pages)
-    
+
+    # CPU Request-based(Throttled) 모드 최적화를 위해 쓰레드풀에서 동기 대기
+    # 응답(200 OK)이 나가면 CPU가 0에 가깝게 줄어들므로, 변환을 마치고 응답해야 합니다.
+    await run_in_threadpool(process_pdf_task, pdf_path, book_dir, book.uuid_key, date_str, split_pages)
+
     return {
          "status": "ok", 
-         "message": "PDF uploaded successfully. Processing background.", 
+         "message": "PDF uploaded and processed successfully.", 
          "book_id": book.uuid_key
     }
-
 @router.get("/flipbooks")
 def list_flipbooks():
     docs = db.collection("flipbooks").stream()
