@@ -36,13 +36,30 @@ def delete_single_flipbook(uuid_key: str):
     except Exception as e:
          logger.warning(f"⚠️ [Delete] GCS cleanup failed for book-{uuid_key}: {str(e)}")
 
-def process_pdf_task(pdf_path: str, book_storage: str, uuid_key: str, date_str: str, split_pages: bool = True):
-    """백그라운드에서 PDF를 이미지로 변환하고 GCS에 업로드 후 Firestore 업데이트."""
+def process_pdf_task(uuid_key: str, date_str: str, split_pages: bool = True):
+    """백그라운드에서 GCS에서 PDF를 받아 이미지로 변환하고 GCS에 업로드 후 Firestore 업데이트."""
+    # 로컬 작업 디렉토리 생성
+    STORAGE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "storage")
+    book_storage = os.path.join(STORAGE_DIR, uuid_key)
+    os.makedirs(book_storage, exist_ok=True)
+    pdf_path = os.path.join(book_storage, "original.pdf")
+    
     try:
-        # 1. 로컬에 임시 변환 저장
+        # [NEW] 1. GCS에서 원본 PDF 다운로드
+        pdf_blob_name = f"flipbooks/{date_str}/{uuid_key}/original.pdf" if date_str else f"flipbooks/{uuid_key}/original.pdf"
+        pdf_blob = bucket.blob(pdf_blob_name)
+        
+        # 파일이 존재하는지 먼저 확인
+        if not pdf_blob.exists():
+            raise FileNotFoundError(f"Original PDF not found in GCS: {pdf_blob_name}")
+            
+        pdf_blob.download_to_filename(pdf_path)
+        logger.info(f"✅ [Background] Downloaded original PDF from GCS for {uuid_key}")
+        
+        # 2. 로컬에 임시 변환 저장
         filenames = convert_pdf_to_images(pdf_path, book_storage, split_pages=split_pages)
         
-        # 2. GCS 버킷에 이미지 업로드 및 URL 수집 (병렬 처리)
+        # 3. GCS 버킷에 이미지 업로드 및 URL 수집 (병렬 처리)
         def upload_worker(fname: str):
             local_path = os.path.join(book_storage, fname)
             blob = bucket.blob(f"flipbooks/{date_str}/{uuid_key}/{fname}")
@@ -51,14 +68,10 @@ def process_pdf_task(pdf_path: str, book_storage: str, uuid_key: str, date_str: 
             
         with ThreadPoolExecutor(max_workers=5) as executor:
             uploaded_urls = list(executor.map(upload_worker, filenames))
-                
-        # [NEW] 원본 PDF도 GCS에 저장
-        pdf_blob_name = f"flipbooks/{date_str}/{uuid_key}/original.pdf" if date_str else f"flipbooks/{uuid_key}/original.pdf"
-        pdf_blob = bucket.blob(pdf_blob_name)
-        pdf_blob.upload_from_filename(pdf_path)
+            
         pdf_url = f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{pdf_blob_name}"
             
-        # 3. Firestore 도큐먼트 업데이트
+        # 4. Firestore 도큐먼트 업데이트
         db.collection("flipbooks").document(uuid_key).update({
             "page_count": len(filenames),
             "image_urls": uploaded_urls,
@@ -72,12 +85,13 @@ def process_pdf_task(pdf_path: str, book_storage: str, uuid_key: str, date_str: 
         # 실패 상태 Firestore 기록
         try:
              db.collection("flipbooks").document(uuid_key).update({
-                  "status": "failed"
+                  "status": "failed",
+                  "error_message": str(e)
              })
         except Exception as fe:
              logger.error(f"❌ [Background] Failed to update fail status for {uuid_key}: {str(fe)}")
     finally:
-        # 4. 로컬 템플러리 스페이스 소거 정리 (Clean up)
+        # 5. 로컬 템플러리 스페이스 소거 정리 (Clean up)
         import shutil
         if os.path.exists(book_storage):
              shutil.rmtree(book_storage)
