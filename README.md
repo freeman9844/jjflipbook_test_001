@@ -70,7 +70,7 @@ npm run dev
 *   `GOOGLE_CLOUD_PROJECT`: Cloud Storage 및 Firestore SDK 호출 시 낚아채는 프로젝트 ID 변수입니다.
 
 > [!IMPORTANT]
-> **Cloud Run 메모리 및 CPU 권장 사항**: PDF 페이지 장 수가 많거나 해상도가 높을 경우 연산 RAM 소모량이 큽니다. 백앤드의 원활한 안정적 연산을 위해 `deploy.sh` 내에 `--memory=2Gi` 및 `--no-cpu-throttling` 확충 레벨이 배정되어 있습니다. 
+> **Cloud Run 리소스 권장 사항**: PDF 페이지 장 수가 많거나 해상도가 높을 경우 연산 RAM 소모량이 크며, 파일 변환(동기 대기) 시간이 길어집니다. 백엔드의 원활한 안정적 연산을 위해 `deploy.sh` 내에 `--memory=2Gi` 및 연결 끊김 방지를 위한 `--timeout=600` 확충 레벨이 배정되어 있습니다. (유휴 비용 절감을 위해 Request-based CPU 할당을 사용합니다.) 
 
 ---
 

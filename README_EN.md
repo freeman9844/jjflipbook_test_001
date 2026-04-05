@@ -68,7 +68,7 @@ Using the shell script (`deploy.sh`) included in this project, you can build Art
 *   `GOOGLE_CLOUD_PROJECT`: Used by Cloud Storage and Firestore SDKs to identify the GCP project origins.
 
 > [!IMPORTANT]
-> **Cloud Run Memory & CPU Allocation**: PDF conversion may consume large RAM workloads. To maintain robust availability without OOM restarts, `--memory=2Gi` and `--no-cpu-throttling` configurations are included securely inside `deploy.sh`!
+> **Cloud Run Memory & Timeout Allocation**: PDF conversion may consume large RAM workloads and take several minutes. To maintain robust availability without connection drops or OOM restarts, `--memory=2Gi` and `--timeout=600` configurations are included securely inside `deploy.sh`! (Request-based CPU allocation is now used to minimize idle costs).
 
 ---
 
