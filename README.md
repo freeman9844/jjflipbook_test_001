@@ -12,7 +12,7 @@ PDF 문서를 업로드하여 웹 브라우저에서 실제 책을 넘기는 듯
 
 | 계층 (Layer) | 기술 스택 / 활용 |
 | :--- | :--- |
-| **Frontend** | `Next.js 14+`, `TailwindCSS / Vanilla CSS`, `react-pageflip` (3D 넘김) |
+| **Frontend** | `Next.js 16+`, `Vanilla CSS`, `react-pageflip` (3D 넘김) |
 | **Backend** | `FastAPI (Python 3.11)`, `poppler-utils`, `pdf2image` (PDF 분할 변환) |
 | **Database** | `Google Cloud Firestore` (NoSQL - 오버레이 및 메타 영구 보존) |
 | **Storage** | `Google Cloud Storage` (변환된 대형 페이지 이미지 저장소 - 날짜별 폴더 구조화) |
@@ -47,7 +47,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 # 1. 프론트엔드 폴더 이동
 cd frontend
 
-# 2. 패키지 설치 (의존성 충돌 및 Airlock 회피를 위한 필수 옵션 배정)
+# 2. 패키지 설치 (의존성 충돌 회피를 위한 필수 옵션)
 npm install --legacy-peer-deps
 
 # 3. 로컬 가동 (기본 3000 포트)
@@ -65,12 +65,33 @@ npm run dev
 ./deploy.sh
 ```
 
+스크립트 실행 시 타겟 프로젝트 환경 선택 후, 보안 시크릿 3종을 대화형으로 입력받습니다.
+
+```
+🔐 보안 환경변수를 입력하세요:
+  ADMIN_PASSWORD (관리자 비밀번호): ****
+  INTERNAL_API_KEY (내부 API 키):   ****
+  SESSION_SECRET (세션 서명 키):    ****
+```
+
+> [!WARNING]
+> 입력을 생략하면 기본값(`admin`, `secret_dev_key`, `simple-mvp-session-secret-123`)이 사용됩니다. **프로덕션 배포 시에는 반드시 강한 값을 입력하세요.**
+
 ### 💡 주요 환경 변수 개요 (`deploy.sh` 가 자동 주입)
-*   `NEXT_PUBLIC_BACKEND_URL`: 프론트엔드가 static 빌드 시 백엔드 앤드포인트를 바라볼 수 있도록 정적으로 구워지는 주소입니다.
-*   `GOOGLE_CLOUD_PROJECT`: Cloud Storage 및 Firestore SDK 호출 시 낚아채는 프로젝트 ID 변수입니다.
+
+| 변수 | 주입 대상 | 설명 |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_BACKEND_URL` | Frontend | 정적 빌드 시 백엔드 엔드포인트를 JS에 구워 넣는 주소 |
+| `GCS_BUCKET_NAME` | Backend + Frontend | 이미지 저장 버킷명 (음악 플레이리스트 API도 이 값을 사용) |
+| `GOOGLE_CLOUD_PROJECT` | Backend | Cloud Storage 및 Firestore SDK 호출 시 프로젝트 ID |
+| `FIRESTORE_DB_NAME` | Backend | Firestore 데이터베이스 인스턴스명 |
+| `INTERNAL_API_KEY` | Backend + Frontend | 프론트엔드 → 백엔드 내부 API 호출 인증 키 (양쪽이 동일해야 함) |
+| `ADMIN_PASSWORD` | Backend | 초기 관리자 계정 시딩에 사용되는 비밀번호 |
+| `SESSION_SECRET` | Frontend | 로그인 세션 쿠키(`auth_token`) 서명 키 |
+| `FRONTEND_URL` | Backend | CORS 허용 도메인 (배포 후 Phase 4.5에서 자동 갱신) |
 
 > [!IMPORTANT]
-> **Cloud Run 리소스 권장 사항**: PDF 페이지 장 수가 많거나 해상도가 높을 경우 연산 RAM 소모량이 크며, 파일 변환(동기 대기) 시간이 길어집니다. 백엔드의 원활한 안정적 연산을 위해 `deploy.sh` 내에 `--memory=2Gi` 및 연결 끊김 방지를 위한 `--timeout=600` 확충 레벨이 배정되어 있습니다. (유휴 비용 절감을 위해 Request-based CPU 할당을 사용합니다.) 
+> **Cloud Run 리소스 권장 사항**: PDF 페이지 수가 많거나 해상도가 높을 경우 RAM 소모가 크며 변환(동기 대기) 시간이 길어집니다. 백엔드의 안정적인 연산을 위해 `deploy.sh` 내에 `--memory=2Gi` 및 연결 끊김 방지를 위한 `--timeout=600`이 배정되어 있습니다. (유휴 비용 절감을 위해 Request-based CPU 할당을 사용합니다.)
 
 ---
 
@@ -78,22 +99,41 @@ npm run dev
 
 ```text
 ├── backend/
-│   ├── main.py            # FastAPI 애플리케이션 진입점 및 컨텍스트 초기화
-│   ├── database.py        # Firestore 및 GCS 클라이언트 연동 모듈
-│   ├── models.py          # Pydantic NoSQL 데이터 모델 팩토리
-│   ├── utils.py           # 인증(비밀번호, API 키) 등 공통 유틸리티
-│   ├── routers/           # 도메인별 API 엔드포인트 분리 (auth, flipbooks, folders)
-│   ├── services/          # PDF 백그라운드 처리 등 핵심 비즈니스 로직 (flipbook_service)
-│   ├── pdf_utils.py       # poppler 기반 PDF 페이지 렌더링 디코더
-│   ├── Dockerfile         # 백엔드 컨테이너 빌드 가이드 
-│   └── requirements.txt   # 라이브러리 명세 파이프라인
+│   ├── main.py                    # FastAPI 애플리케이션 진입점 및 컨텍스트 초기화
+│   ├── database.py                # Firestore 및 GCS 클라이언트 연동 모듈
+│   ├── models.py                  # Pydantic NoSQL 데이터 모델
+│   ├── utils.py                   # 인증(비밀번호, API 키) 등 공통 유틸리티
+│   ├── pdf_utils.py               # poppler 기반 PDF 페이지 렌더링 (5장 청크 처리)
+│   ├── routers/                   # 도메인별 API 엔드포인트 (auth, flipbooks, folders)
+│   ├── services/
+│   │   └── flipbook_service.py    # PDF 처리 및 연쇄 삭제 핵심 비즈니스 로직
+│   ├── scripts/
+│   │   └── cleanup_test_data.py   # 배포 후 테스트 더미 데이터 자동 정화 스크립트
+│   ├── tests/
+│   │   └── test_api_local.py      # Pre-flight 오프라인 단위 테스트
+│   ├── Dockerfile                 # 백엔드 컨테이너 빌드 가이드
+│   └── requirements.txt           # 라이브러리 명세
 │
 ├── frontend/
-│   ├── src/app/           # Next.js App Router (Dashboard 및 View 페이지)
-│   ├── Dockerfile         # 독립형 standalone Next.js 최적화 빌드 펙
-│   └── cloudbuild.yaml    # 빌드 시점 ARG 환경변수 주입 스펙
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── page.tsx           # 대시보드 (폴더/플립북 목록 관리)
+│   │   │   ├── view/[uuidKey]/    # 플립북 뷰어 (3D 페이지 플립)
+│   │   │   ├── edit/[bookId]/     # 오버레이 에디터 (링크/영상 영역 지정)
+│   │   │   └── api/
+│   │   │       ├── backend/       # 백엔드 통합 프록시 (인증 포함)
+│   │   │       └── music/         # GCS 기반 BGM 목록 제공 API
+│   │   └── components/
+│   │       ├── AuthGuard.tsx      # 전역 인증 가드 (레이아웃 래퍼)
+│   │       ├── FolderCard.tsx     # 폴더 카드 UI 컴포넌트
+│   │       ├── FlipbookCard.tsx   # 플립북 카드 UI (처리중/실패 오버레이 포함)
+│   │       ├── ConfirmModal.tsx   # 재사용 삭제 확인 모달 (폴더/문서 공용)
+│   │       ├── CreateFolderModal.tsx  # 폴더 생성 모달
+│   │       └── MusicPlayer.tsx    # 독립 배경음악 플레이어 컴포넌트
+│   ├── Dockerfile                 # standalone Next.js 최적화 빌드
+│   └── cloudbuild.yaml            # 빌드 시점 ARG 환경변수 주입 스펙
 │
-└── deploy.sh              # Cloud Run 원클릭 배포 자동화 마스터 스크립트
+└── deploy.sh                      # Cloud Run 원클릭 배포 자동화 마스터 스크립트
 ```
 
 ## 🚀 대용량 배포 속도 최적화 (Deployment Optimization)
@@ -104,11 +144,7 @@ Cloud Build 환경에서의 빌드/배포 시간을 획기적으로 단축하기
 *   **불필요한 로컬 의존성 제외**: 로컬 환경에서 생성된 무거운 폴더들(`frontend/node_modules/` 약 480MB, `frontend/.next/` 약 290MB, `backend/venv/` 약 210MB)이 클라우드로 전송되는 것을 방지합니다.
 *   **초고속 업로드**: 약 1GB에 달하던 소스코드 업로드 트래픽을 제거하여, `gcloud builds submit` 명령의 컨텍스트 업로드 시간이 수 분에서 **단 몇 초**로 단축되었습니다.
 
-### 2. 중복 빌드 (Double Build) 방지
-*   **배포 스크립트 효율화**: 기존 `deploy.sh`에서는 로컬 환경에서 Next.js 정적 빌드(`npm run build`)를 수행하여 오류를 검증한 뒤, 클라우드 환경에서 동일한 빌드를 또다시 수행하는 비효율이 있었습니다.
-*   **Phase 0 검증 간소화**: 정적 타입 검사(`type-check`), 코드 품질 검사(`lint`), 단위 테스트(`test`)로 충분한 사전 검증을 마친 후, 시간이 오래 소요되는 로컬 빌드 검증 단계를 생략하여 배포 파이프라인의 속도를 크게 향상시켰습니다.
-
-### 3. 도커 빌드 캐싱 (Docker Layer Caching) 활성화
+### 2. 도커 빌드 캐싱 (Docker Layer Caching) 활성화
 *   **Kaniko 레이어 캐싱**: `cloudbuild.yaml` 및 `deploy.sh` 내에 `--cache-from` 옵션을 주입하여, `package.json`이나 `requirements.txt`에 변경이 없을 경우 의존성 설치 단계(npm install / pip install)를 완전히 건너뛰도록 캐싱(Layer Caching) 파이프라인을 구축했습니다. **추가적인 1분 이상의 빌드 속도 개선** 효과가 있습니다.
 
 ---
@@ -123,13 +159,13 @@ Cloud Build 환경에서의 빌드/배포 시간을 획기적으로 단축하기
 
 ### 2. 엔드-투-엔드 스트리밍 업로드 (Streaming Pipeline)
 *   **Frontend-Proxy Relay**: Next.js API Routes 에서 페이로드를 전체 버퍼링하지 않고 `Request.body`를 그대로 파이프하는 **Streaming Body Proxy (`duplex: 'half'`)**를 가동하여 대형 파일 중계 부하를 제거했습니다.
-*   **Backend Streaming Sink**: FastAPI에서 `await file.read()` 대신 `shutil.copyfileobj` 스트리밍을 통해 로컬 임시 디렉토리에 고부담 바인딩 없이 파이프합니다. (`main.py`)
 *   **스레딩 GCS 동시 업로드**: I/O 바운드 구간을 `ThreadPoolExecutor` 풀 구조로 우회하여 5개의 연동 페이로드가 **동시 다발적 릴레이 전송**을 수행합니다.
 
 ### 3. 📂 1-Level 폴더 시스템 및 연쇄 관리 (Cascade Delete)
 *   **논리적 트리 결합**: Firestore 메타데이터(`folder_id`) 기반의 1단계 폴더 파티션을 지원하여 업로드된 문서를 관리할 수 있습니다.
 *   **물리 분리 아키텍처 보존**: GCS에 저장되는 실제 객체(이미지 Blob)들은 폴더 트리 종속성 없이 개별 UID 생명주기로 관리되어, **빠른 데이터 이동 및 확장성**을 철저히 보장합니다.
 *   **연쇄 파기(Cascade Cleanup)**: 대상 폴더 삭제 시 내부에 맵핑된 메인 데이터(Firestore), 오버레이 종속 데이터, GCS 실물 파편 스토리지까지 고아(Orphan) 잔재 없이 완벽히 클린업합니다.
+*   **원자적 오버레이 업데이트**: 오버레이 저장 시 기존 데이터 삭제와 신규 데이터 추가를 단일 `batch.commit()`으로 처리하여 중간 실패로 인한 데이터 유실을 방지합니다.
 
 ### 4. 확실한 자원 회수 (Resource Cleanup Guarantee)
 *   **에러 내성 강화**: 파일 처리 성공 여부와 무관하게 `finally` 블록에서 디렉토리 소거(`shutil.rmtree`)를 강제 마킹하여 임시 스토리지 누수가 원천 차단됩니다.
@@ -140,8 +176,9 @@ Cloud Build 환경에서의 빌드/배포 시간을 획기적으로 단축하기
 *   **배경음악 우회 락해제 (Autoplay Bypass)**: 모바일(iOS Safari 등)의 엄격한 '자동 재생 차단 정책(Autoplay Policy)'을 완벽히 우회하기 위해, 뷰어 화면 어디든 첫 터치(`pointerdown`, `touchstart`)가 발생하는 즉시 백그라운드 `.mp3` 오디오의 재생 락을 해제(Unlock)하는 이벤트 리스너를 연동했습니다.
 
 ### 6. 다이나믹 Lo-Fi BGM 플레이리스트 자동화 (Dynamic Audio Pipeline)
-*   **GCS 기반 분산 오디오 저장소**: Repository 용량 최적화 및 빌드 속도 개선을 위해 150MB가 넘는 수십 개의 배경음악 `.mp3` 파일들을 로컬 폴더(`frontend/public`)가 아닌 **Google Cloud Storage 버킷**으로 전면 분리 이관했습니다. 
-*   **Next.js 동적 JSON API (`/api/music`)**: 서버사이드 라우팅(Route Handlers)이 로컬 파일시스템(`fs`) 대신 GCS의 **REST API를 직접 Fetch 호출**하여 버킷 내의 음악 목록을 실시간으로 스캐닝하고, 퍼블릭 재생 URL 리스트를 동적으로 프론트엔드에 공급합니다. 프론트엔드를 재배포할 필요 없이 GCS에 파일을 추가/삭제하는 것만으로 즉각 플레이리스트가 업데이트됩니다.
+*   **GCS 기반 분산 오디오 저장소**: Repository 용량 최적화 및 빌드 속도 개선을 위해 150MB가 넘는 수십 개의 배경음악 `.mp3` 파일들을 로컬 폴더(`frontend/public`)가 아닌 **Google Cloud Storage 버킷**으로 전면 분리 이관했습니다.
+*   **Next.js 동적 JSON API (`/api/music`)**: 서버사이드 라우팅(Route Handlers)이 GCS의 **REST API를 직접 Fetch 호출**하여 버킷 내의 음악 목록을 실시간으로 스캐닝하고, 퍼블릭 재생 URL 리스트를 동적으로 프론트엔드에 공급합니다. 버킷명은 `GCS_BUCKET_NAME` 환경변수로 주입되어 프로젝트별로 유연하게 대응됩니다. 프론트엔드를 재배포할 필요 없이 GCS에 파일을 추가/삭제하는 것만으로 즉각 플레이리스트가 업데이트됩니다.
+*   **독립 컴포넌트**: `MusicPlayer.tsx`가 뷰어 페이지에서 완전히 분리된 독립 컴포넌트로 관리됩니다.
 
 ---
 
@@ -151,8 +188,9 @@ Cloud Build 환경에서의 빌드/배포 시간을 획기적으로 단축하기
 
 *   **최신순 자동 정렬**: 생성일(`created_at`) 타임스탬프를 기준으로 내림차순 렌더 큐를 고정하여 신규 투입된 문서가 상단에 직관 배치됩니다.
 *   **업데이트 날짜 시각화**: 카드 피처 뷰 왼쪽 하단에 통일된 연월일 데이트 레이블을 자동 투사하여 문서 히스토리를 강화했습니다.
-*   **반응형 모바일 대시보드 레이아웃**: 모바일 접속 시 '새 폴더', 'PDF 업로드', '로그아웃' 등 헤더 및 액션 버튼들이 겹치지 않고 모바일 폭에 맞추어 유연하게 수직(Column) 정렬/배치되도록 Flex Box 구조를 최적화했습니다.
-*   **모바일 뷰어(Viewer) 동적 스케일링 및 뷰포트 최적화**: 모바일 디바이스에서 플립북 이미지가 화면을 가득 채워 하단 컨트롤 바(음악/페이지/다운로드)를 가려버리던 스크롤 단절 현상을 해결했습니다. `100dvh` 동적 뷰포트 고정과 상단 기준점(`center top`) 다이나믹 스케일 다운 알고리즘을 적용하여 좁은 스마트폰 화면에서도 책과 하단 UI가 안정적으로 동시 노출되게끔 교정했습니다.
+*   **반응형 모바일 대시보드 레이아웃**: 모바일 접속 시 '새 폴더', 'PDF 업로드', '로그아웃' 등 헤더 및 액션 버튼들이 모바일 폭에 맞추어 유연하게 수직(Column) 정렬/배치되도록 최적화했습니다.
+*   **모바일 뷰어(Viewer) 동적 스케일링 및 뷰포트 최적화**: `100dvh` 동적 뷰포트 고정과 상단 기준점(`center top`) 다이나믹 스케일 다운 알고리즘을 적용하여 좁은 스마트폰 화면에서도 책과 하단 UI가 안정적으로 동시 노출됩니다.
+*   **컴포넌트 분리**: `FolderCard`, `FlipbookCard`, `ConfirmModal`, `CreateFolderModal` 등 UI 요소가 독립 컴포넌트로 분리되어 유지보수성이 향상되었습니다.
 
 ---
 
@@ -168,27 +206,31 @@ Cloud Build 환경에서의 빌드/배포 시간을 획기적으로 단축하기
 *   VPC 내부에 구글 서비스(`run.app`)에 대한 **Private DNS Zone**이 구성되어 있습니다.
 *   두 Cloud Run 서비스 간의 모든 통신은 외부 NAT IP를 경유하지 않으며, 오로지 구글의 내부 사설망인 Private Google Access VIP(`199.36.153.8`)만을 거쳐 빠르고 안전하게 동작합니다.
 
-### 4. 보안 강화 및 CORS (Cross-Origin Resource Sharing) 제한
-*   **프론트엔드 도메인 화이트리스트 검증**: 백엔드의 보안 강화를 위해, 모든 출처(`*`)를 허용하던 기존 방식에서 탈피하여 환경 변수로 주입된 지정된 `NEXT_PUBLIC_FRONTEND_URL` 도메인만 API와 통신할 수 있도록 CORS 미들웨어 구성을 엄격하게 수정했습니다.
+### 3. 보안 강화 및 CORS (Cross-Origin Resource Sharing) 제한
+*   **프론트엔드 도메인 화이트리스트 검증**: 모든 출처(`*`)를 허용하던 기존 방식에서 탈피하여 환경 변수로 주입된 지정된 `FRONTEND_URL` 도메인만 API와 통신할 수 있도록 CORS 미들웨어 구성을 엄격하게 수정했습니다.
 
 ---
 
-## 🔑 관리자 인증 시스템 리팩토링 (Authentication)
+## 🔑 관리자 인증 시스템 (Authentication)
 
-보안과 전용 세션 관리를 위해 완전히 재설계된 고도화 로그인 아키텍처입니다.
-*   **프론트엔드 하드코딩 비밀번호 제거 (Zero Trust)**: 과거 프론트단(`AuthGuard`)에 노출되어 있던 평문 비밀번호 비교문(`loginId === admin`)과 힌트 UI를 전면 삭제했습니다. 모든 인증은 직접 백엔드 Proxy(`POST /api/backend/login`)를 거치도록 마이그레이션 되어 런타임 보안 무결성을 보강했습니다.
-*   **관리자 자동 시딩 및 난수화**: 초기 배포 시 무조건 `admin` 문자열로 생성되던 보안 취약점을 막기 위해, `deploy.sh` 내장 난수 생성기(`openssl rand -base64`) 기반의 랜덤 패스워드를 주입하도록 리팩토링했습니다.
-*   **패스워드 암호화**: 기존의 무거운 `passlib` 의존성을 과감히 제거하고, 파이썬 네이티브 `bcrypt` 해싱 엔진을 직접 구동하도록 마이그레이션하여 모던 서버 환경에서의 호환성 충돌(AttributeError)을 완벽히 방어했습니다.
-*   **연결형 세션**: `AuthGuard` 컴포넌트와 통합된 로컬 스토리지(`isAuthenticated`) 단일 키 검증을 통해, 화면 깜빡임이나 무한 루프 이중 로그인 요구 현상 없이 매끄러운 세션을 관리합니다.
+보안과 전용 세션 관리를 위해 설계된 고도화 로그인 아키텍처입니다.
+
+*   **전역 AuthGuard 통합**: `layout.tsx`에서 `AuthGuard` 컴포넌트가 모든 페이지를 래핑하여 인증을 일원화합니다. `/view/*` 경로만 공개 접근을 허용하며, 나머지(`/`, `/edit/*` 등)는 로그인이 필요합니다.
+*   **HttpOnly 쿠키 세션**: 로그인 성공 시 `SESSION_SECRET`으로 서명된 값을 `HttpOnly` 쿠키에 저장하여 XSS 기반 세션 탈취를 차단합니다.
+*   **내부 API 키 인증**: 업로드, 삭제 등 쓰기 작업은 `INTERNAL_API_KEY`로 백엔드에서 재검증됩니다. 프론트엔드와 백엔드의 키가 반드시 일치해야 하며, `deploy.sh`가 동일한 값을 양쪽 서비스에 자동 주입합니다.
+*   **패스워드 암호화**: Python 네이티브 `bcrypt` 해싱 엔진으로 관리자 비밀번호를 보호합니다.
+*   **시크릿 프롬프트 입력**: `deploy.sh` 실행 시 `ADMIN_PASSWORD`, `INTERNAL_API_KEY`, `SESSION_SECRET` 세 값을 대화형으로 입력받아 Cloud Run 환경변수에 주입합니다. 스크립트 코드에 시크릿이 하드코딩되지 않습니다.
 
 ---
 
 ## 🛠️ 클라이언트 렌더링 (React/Next.js) 안정성 강화
 
-*   **SSR Hydration 오류 완벽 제어**: DOM을 직접 수정하는 전역 CSS Injection 코드나 윈도우 사이즈 측정(Resize) 로직 등을 `useEffect` 내부 영역으로 철저히 격리 및 밀폐하여, Next.js 구동 시 즉발하던 런타임 크래시(`This page couldn't load`)를 방어했습니다.
-*   **React Error #310 사이드이펙트 체계화**: 조건부 반환문(Early Return)과 React Hooks 간의 호출 서열 꼬임 현상을 치열하게 디버깅하고, Next.js App Router 생태계의 엄격한 렌더 가이드라인(`Rules of Hooks`)에 부합하게 전면 재배치하여 화면 무결성을 극도로 끌어올렸습니다.
-*   **지수 백오프 자동 폴링**: 파일 변환이 처리되는 동안 `status: "failed"` 방어 로직과 함께 무거운 반복 탐색을 억제하는 스마트 폴링 엔진을 도입하여 데이터베이스 호출 비용(Quota)을 획기적으로 낮췄습니다.
-*   **Next.js API Route 정적 캐싱 무력화**: Next.js 14의 공격적인 프로덕션 기본 정적 캐싱(Static Cache)으로 인해 최신 데이터베이스 목록이 브라우저에 연동되지 않고 정체되는(Stale) 이슈를 완전히 해결했습니다. `export const dynamic = 'force-dynamic'` 및 `cache: 'no-store'` 정책을 API 프록시에 고정 주입하여 실시간 데이터베이스 Fetching을 확정했습니다.
+*   **SSR Hydration 오류 완벽 제어**: DOM을 직접 수정하는 전역 CSS Injection 코드나 윈도우 사이즈 측정(Resize) 로직 등을 `useEffect` 내부 영역으로 철저히 격리하여, Next.js 구동 시 즉발하던 런타임 크래시를 방어했습니다.
+*   **타입 안전성 강화**: 모든 컴포넌트에서 `any` 타입을 제거하고 `FlipbookData`, `Overlay`, `Folder` 등 명시적 인터페이스를 정의했습니다.
+*   **병렬 폴링 처리**: 변환 중인 플립북이 여러 개일 때 순차 요청 대신 `Promise.all`로 동시 조회하여 폴링 응답 시간을 단축했습니다.
+*   **지수 백오프 자동 폴링**: `status: "failed"` 방어 로직과 함께 스마트 폴링 엔진을 도입하여 데이터베이스 호출 비용(Quota)을 획기적으로 낮췄습니다.
+*   **불변성 패턴 적용**: 상태 업데이트 시 `prev => prev.map(...)` 등 불변성 패턴을 일관되게 적용하여 예측 불가능한 사이드이펙트를 차단합니다.
+*   **Next.js API Route 정적 캐싱 무력화**: `export const dynamic = 'force-dynamic'` 및 `cache: 'no-store'` 정책을 API 프록시에 고정 주입하여 실시간 데이터베이스 Fetching을 확정했습니다.
 
 ---
 
@@ -220,14 +262,16 @@ graph TD
 
 ## 🧪 Shift-Left TDD 및 자동화 배포 파이프라인 (CI/CD)
 
-클라우드 자원 낭비를 막고 안전한 서버 코드를 릴리즈하기 위해, `deploy.sh`에 **Shift-Left TDD** 원칙을 반영한 양방향 다단계 파이프라인이 탑재되었습니다. 특히 사내망(Airlock) 우회 전략과 쓰레기 데이터 일괄 정화(Garbage Collection) 스크립트가 정교하게 설계되어 있습니다.
+클라우드 자원 낭비를 막고 안전한 서버 코드를 릴리즈하기 위해, `deploy.sh`에 **Shift-Left TDD** 원칙을 반영한 양방향 다단계 파이프라인이 탑재되었습니다.
 
 ### 1. 배포 전 오프라인 방어 (Phase 0: Pre-Flight Checks)
-*   **백엔드 단위 테스트 차단막 (Mocking)**: 로컬 Python 환경(`pytest`)에서 FastAPI 라우팅을 검사하되, 무거운 Cloud Storage 업로드나 Firestore 트랜잭션을 일방적으로 **가짜(Mocking) 객체로 우회 차단**시켜 로컬 환경에서의 쓰레기 데이터 생성을 근본적으로 막았습니다.
-*   **프론트엔드 다층 방어막 (Frontend TDD)**: 배포 직전 브라우저 동작 안전성을 위해 다음과 같은 3중 체계를 강제합니다.
-    *   **TypeScript 정적 타입 검사 (`tsc`)**: 런타임에 뻗을 수 있는 `usePathname()` 이나 Props 충돌 등을 Build 전 단계에서 솎아냅니다.
-    *   **코드 스멜 및 품질 제한 (`eslint`)**: `Next 16` 구조적 문제로 인한 Next 래퍼 버그를 우회하고 네이티브 ESLint 엔진을 직접 명시(`eslint "src/**/*.tsx"`)하여 가장 빠르고 견고하게 품질을 심사합니다.
-    *   **로컬 UI 컴포넌트 유닛 테스트 (`Jest`)**: 내부 데이터 연동(`localStorage` 및 `Mocked Router`) 테스트 케이스를 통과해야만 다음 도커 이미지 빌드로 넘어가도록 `AuthGuard.test.tsx`가 설정되어 있습니다.
+*   **백엔드 단위 테스트 차단막 (Mocking)**: 로컬 Python 환경(`pytest`)에서 FastAPI 라우팅을 검사하되, Cloud Storage 업로드나 Firestore 트랜잭션을 **Mocking 객체로 우회 차단**하여 로컬 환경에서의 쓰레기 데이터 생성을 근본적으로 막았습니다.
+*   **프론트엔드 다층 방어막 (Frontend TDD)**: 배포 직전 4중 검증 체계를 강제합니다.
+    *   **[2-1] TypeScript 정적 타입 검사 (`tsc`)**: 런타임에 뻗을 수 있는 타입 충돌을 Build 전 단계에서 솎아냅니다.
+    *   **[2-2] 코드 스멜 및 품질 제한 (`eslint`)**: 코드 품질을 자동 심사합니다.
+    *   **[2-3] 로컬 UI 컴포넌트 유닛 테스트 (`Jest`)**: `AuthGuard.test.tsx` 등 컴포넌트 렌더링 테스트를 통과해야만 다음 단계로 진행합니다.
+    *   **[2-4] Next.js SSR 정적 빌드 검증 (`npm run build`)**: 빌드 오류가 있는 코드가 Cloud Build에 올라가는 것을 사전 차단합니다.
+*   **gcloud 자동 탐색**: `PATH`에서 `gcloud`를 먼저 탐색하고, 없을 때만 절대경로 fallback을 시도합니다. 실행 불가 시 명확한 오류 메시지를 출력하고 중단합니다.
 
 ### 2. 배포 후 자동 정화 (Phase 5: G.C Teardown)
-*   **찌꺼기 일괄 소각 (Cleanup)**: 과거 수동 테스트 혹은 단위 테스트로 인해 생성되었을 수 있는 찌꺼기 PDF 객체들이 클라우드 저장소 공간과 비용(Quota)을 갉아먹는 현상을 막기 위해, 배포의 가장 마지막 단계(Phase 5)에서 **`backend/scripts/cleanup_test_data.py`** 가 백그라운드로 자동 실행됩니다. 이 전용 스크립트가 명시된 테스트 더미들을 Cloud Storage 블롭 단위부터 Firestore 메타데이터까지 일괄 색인하여 깨끗하게 제거하고 파이프라인을 온전하게 종료시킵니다.
+*   **찌꺼기 일괄 소각 (Cleanup)**: 과거 수동 테스트 혹은 단위 테스트로 인해 생성되었을 수 있는 찌꺼기 PDF 객체들을 막기 위해, 배포의 가장 마지막 단계(Phase 5)에서 **`backend/scripts/cleanup_test_data.py`** 가 자동 실행됩니다. 명시된 테스트 더미들을 Cloud Storage 블롭 단위부터 Firestore 메타데이터까지 일괄 색인하여 제거하고 파이프라인을 온전하게 종료시킵니다.
