@@ -40,7 +40,6 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
     const [windowHeight, setWindowHeight] = useState(800);
     const [isMounted, setIsMounted] = useState(false);
     // react-pageflip은 TypeScript 타입 미지원 - any 사용 불가피
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const flipBookRef = useRef<any>(null);
 
     useEffect(() => {
