@@ -17,19 +17,9 @@ export async function GET(
 ) {
     const resolvedParams = await params;
     const pathStr = resolvedParams.path.join('/');
-    
-    // allow public viewing (flipbook metadata and overlays)
-    // assuming `/flipbook/{uuid_key}` and `/flipbook/{uuid_key}/overlays` need public access
-    // if everything needs auth, just check!
-    // the frontend `/view/[uuidKey]/page.tsx` needs to access these without auth if it's public.
-    // wait, is viewing public?
-    // Let's check `view/[uuidKey]/page.tsx`
-    // It doesn't check authentication to render, just to show admin features.
-    // So GET to `/flipbook/xxx` and `/flipbook/xxx/overlays` MUST be public!
-    // But GET to `/folders` and `/flipbooks` (dashboard lists) should be protected?
-    // Dashboard handles auth locally, but API proxy was open.
-    // Let's explicitly protect `/folders` and `/flipbooks` GET endpoints.
-    
+
+    // /folders, /flipbooks (대시보드 목록)는 인증 필요
+    // /flipbook/:uuid, /flipbook/:uuid/overlays는 공개 접근 허용 (뷰어 공유용)
     if (pathStr === 'folders' || pathStr === 'flipbooks') {
         if (!isAuthenticated(request)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -42,16 +32,13 @@ export async function GET(
     try {
         const res = await fetch(url, { cache: 'no-store' });
         const responseContentType = res.headers.get('content-type') || '';
-        let data;
-        if (responseContentType.includes('application/json')) {
-            data = await res.json();
-        } else {
-            data = { message: await res.text() };
-        }
+        const data = responseContentType.includes('application/json')
+            ? await res.json()
+            : { message: await res.text() };
         return NextResponse.json(data, { status: res.status });
-    } catch (error: any) {
-        console.error(`[Proxy GET Error] ${url}:`, error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Internal proxy error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -65,14 +52,14 @@ export async function POST(
     const searchParams = request.nextUrl.search;
     const url = `${BACKEND_URL}/${pathStr}${searchParams}`;
 
-    // Handle logout (frontend only, clear cookie)
+    // 로그아웃은 프론트엔드에서만 처리 (쿠키 삭제)
     if (pathStr === 'logout') {
         const resObj = NextResponse.json({ status: 'ok', message: 'Logged out' });
         resObj.cookies.delete('auth_token');
         return resObj;
     }
 
-    // For all other POST requests except login, check authentication
+    // 로그인 외 모든 POST는 인증 필요
     if (pathStr !== 'login' && !isAuthenticated(request)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -82,45 +69,43 @@ export async function POST(
         const apiKey = process.env.INTERNAL_API_KEY || 'secret_dev_key';
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout
+        const timeoutId = setTimeout(() => controller.abort(), 600000); // 10분 타임아웃
 
         const res = await fetch(url, {
             method: 'POST',
-            body: request.body, 
+            body: request.body,
             headers: {
                 'Content-Type': contentType,
-                'X-API-Key': apiKey
+                'X-API-Key': apiKey,
             },
             signal: controller.signal,
-            // @ts-ignore
-            duplex: 'half'
-        } as any);
+            // Node.js fetch에서 스트리밍 body를 지원하기 위한 설정
+            ...(({ duplex: 'half' }) as Record<string, unknown>),
+        } as RequestInit);
 
         clearTimeout(timeoutId);
 
         const responseContentType = res.headers.get('content-type') || '';
-        let data;
-        if (responseContentType.includes('application/json')) {
-            data = await res.json();
-        } else {
-            data = { message: await res.text() };
-        }
+        const data = responseContentType.includes('application/json')
+            ? await res.json()
+            : { message: await res.text() };
 
         const resObj = NextResponse.json(data, { status: res.status });
 
-        // If login was successful, set HttpOnly cookie
+        // 로그인 성공 시 HttpOnly 쿠키 발급
         if (pathStr === 'login' && res.ok && data.authenticated) {
             resObj.cookies.set('auth_token', SESSION_TOKEN, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax',
-                path: '/'
+                path: '/',
             });
         }
 
         return resObj;
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Internal proxy error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -139,20 +124,17 @@ export async function DELETE(
     const url = `${BACKEND_URL}/${pathStr}${searchParams}`;
 
     try {
-        const res = await fetch(url, { 
+        const res = await fetch(url, {
             method: 'DELETE',
-            headers: { 'X-API-Key': process.env.INTERNAL_API_KEY || 'secret_dev_key' }
+            headers: { 'X-API-Key': process.env.INTERNAL_API_KEY || 'secret_dev_key' },
         });
         const responseContentType = res.headers.get('content-type') || '';
-        let data;
-        if (responseContentType.includes('application/json')) {
-            data = await res.json();
-        } else {
-            data = { message: await res.text() };
-        }
+        const data = responseContentType.includes('application/json')
+            ? await res.json()
+            : { message: await res.text() };
         return NextResponse.json(data, { status: res.status });
-    } catch (error: any) {
-        console.error(`[Proxy DELETE Error] ${url}:`, error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Internal proxy error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

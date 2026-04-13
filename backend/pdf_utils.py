@@ -1,5 +1,8 @@
 import os
+import logging
 from pdf2image import convert_from_path
+
+logger = logging.getLogger(__name__)
 
 # macOS M1/M2 등 애플 실리콘 환경 대비 (컨테이너 내에선 PATH 활용)
 POPPLER_PATH = "/opt/homebrew/bin" if os.path.exists("/opt/homebrew/bin") else None
@@ -21,7 +24,7 @@ def convert_pdf_to_images(pdf_path: str, output_dir: str, dpi: int = 200, split_
     
     for start in range(1, total_pages + 1, chunk_size):
         end = min(start + chunk_size - 1, total_pages)
-        print(f"Processing pages {start} to {end} / {total_pages}...")
+        logger.info(f"Processing pages {start} to {end} / {total_pages}...")
         
         images = convert_from_path(
             pdf_path,
@@ -59,5 +62,5 @@ def convert_pdf_to_images(pdf_path: str, output_dir: str, dpi: int = 200, split_
         # 가독성 메모리 변량 클리어용 가비지 컬렉터 암시
         del images 
 
-    print(f"Successfully converted {total_pages} sheets to {len(saved_files)} individual pages.")
+    logger.info(f"Successfully converted {total_pages} sheets to {len(saved_files)} individual pages.")
     return saved_files

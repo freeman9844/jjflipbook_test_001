@@ -1,24 +1,34 @@
 import { NextResponse } from 'next/server';
 
+interface GcsObject {
+    name: string;
+}
+
+interface GcsListResponse {
+    items?: GcsObject[];
+}
+
 export async function GET() {
+    const bucketName = process.env.GCS_BUCKET_NAME || 'jjflipbook-gcs-001';
+    const bucketUrl = `https://storage.googleapis.com/storage/v1/b/${bucketName}/o?prefix=bgm/`;
+
     try {
-        const bucketUrl = "https://storage.googleapis.com/storage/v1/b/jjflipbook-gcs-001/o?prefix=bgm/";
         const res = await fetch(bucketUrl, { next: { revalidate: 3600 } });
         if (!res.ok) {
             return NextResponse.json({ files: [] });
         }
-        const data = await res.json();
+
+        const data: GcsListResponse = await res.json();
         if (!data.items) {
             return NextResponse.json({ files: [] });
         }
-        
-        // Return full public URLs
+
         const files = data.items
-            .filter((item: any) => item.name.endsWith('.mp3'))
-            .map((item: any) => `https://storage.googleapis.com/jjflipbook-gcs-001/${item.name}`);
-            
+            .filter((item) => item.name.endsWith('.mp3'))
+            .map((item) => `https://storage.googleapis.com/${bucketName}/${item.name}`);
+
         return NextResponse.json({ files });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ files: [] }, { status: 500 });
     }
 }

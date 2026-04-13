@@ -8,19 +8,22 @@ logger = logging.getLogger(__name__)
 
 def delete_single_flipbook(uuid_key: str):
     doc_ref = db.collection("flipbooks").document(uuid_key)
-    if not doc_ref.get().exists:
+    # 단일 읽기로 존재 확인 + 데이터 추출
+    snapshot = doc_ref.get()
+    if not snapshot.exists:
         return
-        
+
+    book_data = snapshot.to_dict() or {}
+    date_str = book_data.get("date_folder", "")
+
     # 1. 서브 컬렉션 (Overlays) 삭제
     overlays = doc_ref.collection("overlays").stream()
     batch = db.batch()
     for d in overlays:
         batch.delete(d.reference)
     batch.commit()
-        
-    # 2. 메인 플립북 문서 삭제 부가 정보 추출
-    book_data = doc_ref.get().to_dict()
-    date_str = book_data.get("date_folder", "")
+
+    # 2. 메인 플립북 문서 삭제
     doc_ref.delete()
     
     # 3. GCS 블롭 소거 (Prefix 기반) - 멀티스레딩 병렬 삭제 적용

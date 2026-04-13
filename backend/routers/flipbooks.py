@@ -28,6 +28,7 @@ async def upload_pdf(
     
     data = book.model_dump()
     data["date_folder"] = date_str
+    data["status"] = "processing"
     db.collection("flipbooks").document(book.uuid_key).set(data)
     
     book_dir = os.path.join(STORAGE_DIR, book.uuid_key)
@@ -88,15 +89,18 @@ def update_overlays(uuid_key: str, overlays: list[dict]):
     if not doc_ref.get().exists:
         raise HTTPException(status_code=404, detail="Flipbook not found")
 
-    existing_docs = doc_ref.collection("overlays").stream()
+    # 삭제 + 추가를 단일 batch로 원자적 처리
     batch = db.batch()
+
+    existing_docs = doc_ref.collection("overlays").stream()
     for d in existing_docs:
         batch.delete(d.reference)
-    batch.commit()
-        
+
     for data in overlays:
-        doc_ref.collection("overlays").add(data)
-        
+        new_ref = doc_ref.collection("overlays").document()
+        batch.set(new_ref, data)
+
+    batch.commit()
     return {"status": "ok", "message": f"{len(overlays)} overlays updated"}
 
 @router.delete("/flipbook/{uuid_key}")
