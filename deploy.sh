@@ -191,6 +191,9 @@ $GCLOUD_PATH run deploy flipbook-backend \
   --memory=2Gi \
   --cpu=2 \
   --timeout=600 \
+  --min-instances=0 \
+  --max-instances=3 \
+  --concurrency=1 \
   $VPC_OPTIONS \
   $INGRESS_OPTIONS \
   --set-env-vars "GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DB_NAME=$FIRESTORE_DB_NAME,GCS_BUCKET_NAME=$GCS_BUCKET_NAME,INTERNAL_API_KEY=$INTERNAL_API_KEY,ADMIN_PASSWORD=$ADMIN_PASSWORD"
