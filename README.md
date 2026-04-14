@@ -91,7 +91,7 @@ npm run dev
 | `FRONTEND_URL` | Backend | CORS 허용 도메인 (배포 후 Phase 4.5에서 자동 갱신) |
 
 > [!IMPORTANT]
-> **Cloud Run 리소스 권장 사항**: PDF 페이지 수가 많거나 해상도가 높을 경우 RAM 소모가 크며 변환(동기 대기) 시간이 길어집니다. 백엔드의 안정적인 연산을 위해 `deploy.sh` 내에 `--memory=2Gi` 및 연결 끊김 방지를 위한 `--timeout=600`이 배정되어 있습니다. (유휴 비용 절감을 위해 Request-based CPU 할당을 사용합니다.)
+> **Cloud Run 리소스 권장 사항**: PDF 페이지 수가 많거나 해상도가 높을 경우 RAM 소모가 크며 변환(동기 대기) 시간이 길어집니다. 백엔드 안정성을 위해 `--memory=2Gi`, `--timeout=600`, `--concurrency=1`(PDF 변환 OOM 방지)이 설정되어 있습니다. 프론트엔드는 `--memory=1Gi`입니다. 양쪽 모두 `--min-instances=0`으로 **스케일 투 제로**가 보장되어 유휴 비용이 0에 가깝습니다. (Request-based CPU 할당 적용)
 
 ---
 
@@ -133,7 +133,8 @@ npm run dev
 │   ├── Dockerfile                 # standalone Next.js 최적화 빌드
 │   └── cloudbuild.yaml            # 빌드 시점 ARG 환경변수 주입 스펙
 │
-└── deploy.sh                      # Cloud Run 원클릭 배포 자동화 마스터 스크립트
+├── deploy.sh                      # Cloud Run 원클릭 배포 자동화 마스터 스크립트
+└── gcs-lifecycle.json             # GCS 버킷 Lifecycle 정책 (미완료 업로드 1일 삭제, 고아 객체 365일 삭제)
 ```
 
 ## 🚀 대용량 배포 속도 최적화 (Deployment Optimization)
@@ -155,7 +156,7 @@ Cloud Build 환경에서의 빌드/배포 시간을 획기적으로 단축하기
 
 ### 1. 청크 단위 PDF 변환 (Chunked PDF Processing)
 *   **메모리 스파이크 차단**: 대형 PDF 전체를 메모리에 로드하지 않고, **5페이지 단위 청크(Chunk)**로 순차 디코딩하여 RAM 점유율을 극도로 낮추었습니다. (`pdf_utils.py`)
-*   **렌더링 멀티 프로세스**: `pdf2image` 디코딩 연산자에 `thread_count=4` 분산 레벨을 부여하여 무거운 변환 코스트를 분할 가속합니다.
+*   **렌더링 멀티 프로세스**: `pdf2image` 디코딩 연산자에 `thread_count=os.cpu_count()` 동적 스레드 수를 부여하여 Cloud Run의 실제 vCPU 수에 맞게 자동 최적화됩니다.
 
 ### 2. 엔드-투-엔드 스트리밍 업로드 (Streaming Pipeline)
 *   **Frontend-Proxy Relay**: Next.js API Routes 에서 페이로드를 전체 버퍼링하지 않고 `Request.body`를 그대로 파이프하는 **Streaming Body Proxy (`duplex: 'half'`)**를 가동하여 대형 파일 중계 부하를 제거했습니다.
@@ -275,3 +276,32 @@ graph TD
 
 ### 2. 배포 후 자동 정화 (Phase 5: G.C Teardown)
 *   **찌꺼기 일괄 소각 (Cleanup)**: 과거 수동 테스트 혹은 단위 테스트로 인해 생성되었을 수 있는 찌꺼기 PDF 객체들을 막기 위해, 배포의 가장 마지막 단계(Phase 5)에서 **`backend/scripts/cleanup_test_data.py`** 가 자동 실행됩니다. 명시된 테스트 더미들을 Cloud Storage 블롭 단위부터 Firestore 메타데이터까지 일괄 색인하여 제거하고 파이프라인을 온전하게 종료시킵니다.
+
+---
+
+## 💰 GCP 비용 최적화 (Zero-Waste)
+
+가끔씩 사용하는 소규모 패턴에서 유휴 비용을 0에 가깝게 만들기 위해 아키텍처 변경 없이 설정 수정만으로 최적화합니다.
+
+### Cloud Run 스케일 투 제로 설정
+
+| 서비스 | 옵션 | 값 | 근거 |
+| :--- | :--- | :--- | :--- |
+| **Backend** | `--min-instances` | `0` | 트래픽 없을 때 인스턴스 0개로 스케일 투 제로 |
+| **Backend** | `--max-instances` | `3` | 동시 PDF 변환 최대 3개 제한, 폭주 요금 방지 |
+| **Backend** | `--concurrency` | `1` | 인스턴스당 PDF 변환 요청 1개만 처리 (OOM 방지) |
+| **Backend** | `--memory` | `2Gi` | PDF 변환에 필요한 최소 사양 유지 |
+| **Frontend** | `--min-instances` | `0` | 스케일 투 제로 명시 보장 |
+| **Frontend** | `--max-instances` | `5` | 소규모 트래픽 상한 설정, 폭주 방지 |
+| **Frontend** | `--memory` | `1Gi` | Next.js 16 standalone + sharp 모듈 OOM 방지 |
+
+> 콜드 스타트 ~20-30초가 발생하나, 소규모 사용 패턴에서는 수용 가능합니다.
+
+### GCS Lifecycle 정책 (`gcs-lifecycle.json`)
+
+배포(`deploy.sh` Phase 0.5)마다 GCS 버킷에 자동 적용됩니다.
+
+| 규칙 | 조건 | 목적 |
+| :--- | :--- | :--- |
+| `AbortIncompleteMultipartUpload` | age ≥ 1일 | 업로드 중단 시 남은 임시 데이터 자동 삭제 |
+| `Delete` | age ≥ 365일 | GCS 정리 실패로 누적된 고아(Orphan) 이미지 안전망 제거 |
