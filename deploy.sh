@@ -143,6 +143,18 @@ cd ..
 
 echo "✅ 사전 역량 검증 완벽 통과! 진짜 클라우드 배포 파이프라인(Phase 1~4)을 시작합니다..."
 
+echo "----------------------------------------"
+echo "🗄️ [Phase 0.5] GCS Lifecycle 정책 적용 중... (버킷: $GCS_BUCKET_NAME)"
+echo "----------------------------------------"
+$GCLOUD_PATH storage buckets update gs://$GCS_BUCKET_NAME \
+  --project=$PROJECT_ID \
+  --lifecycle-file=gcs-lifecycle.json
+if [ $? -ne 0 ]; then
+  echo "⚠️ GCS Lifecycle 설정 실패 (비치명적, 배포는 계속 진행됩니다)"
+else
+  echo "✅ GCS Lifecycle 정책 적용 완료"
+fi
+
 # ========================================
 # [VPC 및 네트워크 보안 옵션 처리]
 # VPC_NETWORK가 설정되어 있지 않거나 'default'인 경우 서버리스 VPC Egress를 비활성화합니다.
