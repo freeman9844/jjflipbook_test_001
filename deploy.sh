@@ -222,11 +222,12 @@ $GCLOUD_PATH run deploy flipbook-frontend \
   --platform managed \
   --region $REGION \
   --allow-unauthenticated \
-  --memory=512Mi \
+  --memory=1Gi \
   --cpu=1 \
   --min-instances=0 \
   --max-instances=5 \
   $VPC_OPTIONS \
+  $INGRESS_OPTIONS \
   --set-env-vars "NEXT_PUBLIC_BACKEND_URL=$BACKEND_URL,GCS_BUCKET_NAME=$GCS_BUCKET_NAME,INTERNAL_API_KEY=$INTERNAL_API_KEY,SESSION_SECRET=$SESSION_SECRET"
 if [ $? -ne 0 ]; then echo "❌ Frontend 배포 실패!"; exit 1; fi
 
