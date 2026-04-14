@@ -71,10 +71,8 @@ def process_pdf_task(pdf_path: str, book_storage: str, uuid_key: str, date_str: 
         logger.info(f"✅ [Background] Flipbook-{uuid_key} Firestore Updated successfully. ({len(filenames)} pages)")
              
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         error_msg = str(e)
-        logger.error(f"❌ [Background] Error processing PDF-{uuid_key}: {error_msg}")
+        logger.error(f"❌ [Background] Error processing PDF-{uuid_key}: {error_msg}", exc_info=True)
         # 실패 상태 및 구체적인 에러 메시지 Firestore 기록
         try:
              db.collection("flipbooks").document(uuid_key).update({

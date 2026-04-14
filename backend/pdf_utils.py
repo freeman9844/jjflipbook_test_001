@@ -33,7 +33,7 @@ def convert_pdf_to_images(pdf_path: str, output_dir: str, dpi: int = 200, split_
             dpi=dpi,
             poppler_path=POPPLER_PATH,
             fmt="webp",
-            thread_count=4
+            thread_count=os.cpu_count() or 2
         )
         
         for i, image in enumerate(images):
