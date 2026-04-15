@@ -1,18 +1,18 @@
-fastapi[all]
-uvicorn
-sqlmodel
+fastapi
+uvicorn[standard]
+python-multipart
+email-validator
 pdf2image
 google-auth
 google-auth-oauthlib
 google-auth-httplib2
 pyOpenSSL
 python-dotenv
-python-multipart
 Pillow
 google-cloud-storage
 google-cloud-firestore
 passlib
-bcrypt==3.2.0
+bcrypt
 aiofiles>=23.2.1
 
 pytest>=8.0.0
