@@ -1,7 +1,6 @@
 fastapi
-uvicorn[standard]
+uvicorn
 python-multipart
-email-validator
 pdf2image
 google-auth
 google-auth-oauthlib
@@ -11,8 +10,7 @@ python-dotenv
 Pillow
 google-cloud-storage
 google-cloud-firestore
-passlib
-bcrypt
+bcrypt>=3.2.0
 aiofiles>=23.2.1
 
 pytest>=8.0.0
