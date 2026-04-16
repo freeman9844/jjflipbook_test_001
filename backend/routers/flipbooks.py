@@ -1,6 +1,6 @@
 import os
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File, Query
-from database import db
+from database import get_db
 from models import Flipbook, Overlay
 from utils import verify_api_key
 from services.flipbook_service import process_pdf_task, delete_single_flipbook
@@ -29,7 +29,7 @@ async def upload_pdf(
     data = book.model_dump()
     data["date_folder"] = date_str
     data["status"] = "processing"
-    db.collection("flipbooks").document(book.uuid_key).set(data)
+    get_db().collection("flipbooks").document(book.uuid_key).set(data)
     
     book_dir = os.path.join(STORAGE_DIR, book.uuid_key)
     os.makedirs(book_dir, exist_ok=True)
@@ -50,7 +50,7 @@ async def upload_pdf(
     }
 @router.get("/flipbooks")
 def list_flipbooks():
-    docs = db.collection("flipbooks").stream()
+    docs = get_db().collection("flipbooks").stream()
     results = []
     for doc in docs:
         d = doc.to_dict()
@@ -60,7 +60,7 @@ def list_flipbooks():
 
 @router.get("/flipbook/{uuid_key}")
 def get_flipbook(uuid_key: str):
-    doc_ref = db.collection("flipbooks").document(uuid_key)
+    doc_ref = get_db().collection("flipbooks").document(uuid_key)
     doc = doc_ref.get()
     if not doc.exists:
         raise HTTPException(status_code=404, detail="Flipbook not found")
@@ -71,7 +71,7 @@ def get_flipbook(uuid_key: str):
 
 @router.get("/flipbook/{uuid_key}/overlays")
 def get_overlays(uuid_key: str):
-    doc_ref = db.collection("flipbooks").document(uuid_key)
+    doc_ref = get_db().collection("flipbooks").document(uuid_key)
     if not doc_ref.get().exists:
         raise HTTPException(status_code=404, detail="Flipbook not found")
 
@@ -85,12 +85,12 @@ def get_overlays(uuid_key: str):
 
 @router.post("/flipbook/{uuid_key}/overlays")
 def update_overlays(uuid_key: str, overlays: list[dict]):
-    doc_ref = db.collection("flipbooks").document(uuid_key)
+    doc_ref = get_db().collection("flipbooks").document(uuid_key)
     if not doc_ref.get().exists:
         raise HTTPException(status_code=404, detail="Flipbook not found")
 
     # 삭제 + 추가를 단일 batch로 원자적 처리
-    batch = db.batch()
+    batch = get_db().batch()
 
     existing_docs = doc_ref.collection("overlays").stream()
     for d in existing_docs:
@@ -105,7 +105,7 @@ def update_overlays(uuid_key: str, overlays: list[dict]):
 
 @router.delete("/flipbook/{uuid_key}")
 def delete_flipbook(uuid_key: str, validated: bool = Depends(verify_api_key)):
-    doc_ref = db.collection("flipbooks").document(uuid_key)
+    doc_ref = get_db().collection("flipbooks").document(uuid_key)
     if not doc_ref.get().exists:
         raise HTTPException(status_code=404, detail="Flipbook not found")
         

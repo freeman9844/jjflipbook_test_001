@@ -191,6 +191,7 @@ $GCLOUD_PATH run deploy flipbook-backend \
   --memory=2Gi \
   --cpu=2 \
   --timeout=600 \
+  --cpu-boost \
   --min-instances=0 \
   --max-instances=3 \
   --concurrency=1 \

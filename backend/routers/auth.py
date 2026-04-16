@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from database import db
+from database import get_db
 from utils import verify_password
 
 router = APIRouter(tags=["Auth"])
@@ -11,7 +11,7 @@ class LoginRequest(BaseModel):
 
 @router.post("/login")
 def login(req: LoginRequest):
-    user_ref = db.collection("users").document(req.username)
+    user_ref = get_db().collection("users").document(req.username)
     doc = user_ref.get()
     if not doc.exists:
         raise HTTPException(status_code=401, detail="존재하지 않는 사용자입니다.")
