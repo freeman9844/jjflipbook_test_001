@@ -100,7 +100,7 @@ npm run dev
 ```text
 ├── backend/
 │   ├── main.py                    # FastAPI 애플리케이션 진입점 및 컨텍스트 초기화
-│   ├── database.py                # Firestore 및 GCS 클라이언트 연동 모듈
+│   ├── database.py                # Firestore/GCS 클라이언트 lazy singleton (get_db/get_bucket)
 │   ├── models.py                  # Pydantic NoSQL 데이터 모델
 │   ├── utils.py                   # 인증(비밀번호, API 키) 등 공통 유틸리티
 │   ├── pdf_utils.py               # poppler 기반 PDF 페이지 렌더링 (5장 청크 처리)
@@ -291,11 +291,25 @@ graph TD
 | **Backend** | `--max-instances` | `3` | 동시 PDF 변환 최대 3개 제한, 폭주 요금 방지 |
 | **Backend** | `--concurrency` | `1` | 인스턴스당 PDF 변환 요청 1개만 처리 (OOM 방지) |
 | **Backend** | `--memory` | `2Gi` | PDF 변환에 필요한 최소 사양 유지 |
+| **Backend** | `--cpu-boost` | (설정) | 컨테이너 기동 중 CPU 임시 증가 → cold start 가속 |
 | **Frontend** | `--min-instances` | `0` | 스케일 투 제로 명시 보장 |
 | **Frontend** | `--max-instances` | `5` | 소규모 트래픽 상한 설정, 폭주 방지 |
 | **Frontend** | `--memory` | `1Gi` | Next.js 16 standalone + sharp 모듈 OOM 방지 |
 
-> 콜드 스타트 ~20-30초가 발생하나, 소규모 사용 패턴에서는 수용 가능합니다.
+> cold start 최적화 적용 후 **약 5~10초 → 2~4초** 수준으로 단축됩니다. (아래 섹션 참고)
+
+### Cloud Run Cold Start 최적화 (4-Layer)
+
+`--min-instances=0` 유지(비용 제로) 하에 cold start를 단축하는 4가지 레이어가 적용되어 있습니다.
+
+| 레이어 | 적용 내용 | 단축 효과 |
+| :--- | :--- | :--- |
+| **CPU Boost** | `--cpu-boost` — 기동 중 CPU 임시 증가, idle 비용 없음 | startup 전반 가속 |
+| **Multi-stage Docker** | builder(gcc 포함) / runtime(poppler만) 이미지 분리 → 이미지 크기 감소 | ~0.5~1s |
+| **Lazy GCP 클라이언트** | `database.py`: `get_db()` / `get_bucket()` lazy singleton — 모듈 임포트 시 GCP 인증 없음 | ~1~3s (최대 효과) |
+| **Startup 로직 경량화** | admin seeding → `asyncio.create_task` 백그라운드 실행 / 헬스체크(`/`) GCP 호출 제거 | ~0.5~1s |
+
+> `pdf2image` 임포트도 PDF 변환 호출 시점으로 지연되어(lazy import) cold start 시 불필요한 모듈 로드가 없습니다.
 
 ### GCS Lifecycle 정책 (`gcs-lifecycle.json`)
 
