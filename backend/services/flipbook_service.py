@@ -6,15 +6,9 @@ from database import get_db, get_bucket, GCS_BUCKET_NAME
 logger = logging.getLogger(__name__)
 
 
-def delete_single_flipbook(uuid_key: str):
+def delete_single_flipbook(uuid_key: str, date_str: str = ""):
     db = get_db()
     doc_ref = db.collection("flipbooks").document(uuid_key)
-    snapshot = doc_ref.get()
-    if not snapshot.exists:
-        return
-
-    book_data = snapshot.to_dict() or {}
-    date_str = book_data.get("date_folder", "")
 
     # 1. 서브 컬렉션 (Overlays) 삭제
     overlays = doc_ref.collection("overlays").stream()

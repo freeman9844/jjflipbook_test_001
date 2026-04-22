@@ -50,7 +50,12 @@ async def upload_pdf(
     }
 @router.get("/flipbooks")
 def list_flipbooks():
-    docs = get_db().collection("flipbooks").stream()
+    docs = (
+        get_db().collection("flipbooks")
+        .order_by("created_at", direction="DESCENDING")
+        .limit(50)
+        .stream()
+    )
     results = []
     for doc in docs:
         d = doc.to_dict()
@@ -105,9 +110,10 @@ def update_overlays(uuid_key: str, overlays: list[dict]):
 
 @router.delete("/flipbook/{uuid_key}")
 def delete_flipbook(uuid_key: str, validated: bool = Depends(verify_api_key)):
-    doc_ref = get_db().collection("flipbooks").document(uuid_key)
-    if not doc_ref.get().exists:
+    doc = get_db().collection("flipbooks").document(uuid_key).get()
+    if not doc.exists:
         raise HTTPException(status_code=404, detail="Flipbook not found")
-        
-    delete_single_flipbook(uuid_key)
+
+    date_str = (doc.to_dict() or {}).get("date_folder", "")
+    delete_single_flipbook(uuid_key, date_str)
     return {"status": "ok", "message": "Flipbook deleted successfully"}
