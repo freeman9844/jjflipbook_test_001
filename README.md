@@ -311,6 +311,17 @@ graph TD
 
 > `pdf2image` 임포트도 PDF 변환 호출 시점으로 지연되어(lazy import) cold start 시 불필요한 모듈 로드가 없습니다.
 
+### 백엔드 API 응답 최적화 (4항목)
+
+| 항목 | 변경 내용 | 효과 |
+| :--- | :--- | :--- |
+| **GZip 압축** | `GZipMiddleware` 추가 (1KB 이상 응답 자동 압축) | JSON 응답 크기 ~60% 감소 |
+| **Firestore 쿼리 제한** | `list_flipbooks`: 전체 스캔 → `order_by("created_at").limit(50)` | 무제한 스캔 방지, 비용 절감, 최신순 정렬 |
+| **Firestore 이중 읽기 제거** | 삭제 엔드포인트: 존재 확인 + 데이터 조회 2회 → 1회로 통합, `date_str` 서비스로 전달 | Firestore 읽기 1회 절감 |
+| **PDF 변환 파라미터화** | DPI `200→150` (환경변수 `PDF_DPI`), WebP quality `75` (환경변수 `WEBP_QUALITY`) | 이미지 파일 크기 ~40% 감소, 변환 속도 향상 |
+
+> 💡 필요시 `deploy.sh`의 `--set-env-vars`에 `PDF_DPI=200,WEBP_QUALITY=85` 등을 추가하여 품질을 조정할 수 있습니다.
+
 ### GCS Lifecycle 정책 (`gcs-lifecycle.json`)
 
 배포(`deploy.sh` Phase 0.5)마다 GCS 버킷에 자동 적용됩니다.
