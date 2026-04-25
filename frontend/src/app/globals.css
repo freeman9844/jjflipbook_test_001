@@ -41,3 +41,15 @@ a {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/*
+ * Android 깜빡임 수정:
+ * page-flip 라이브러리가 .stf__parent에 translateZ(0)를 주입해 GPU 레이어를 생성함.
+ * 외부 wrapper의 transform: scale()이 이미 GPU 레이어를 생성하므로 두 레이어가 충돌.
+ * translateZ(0)를 제거하고 backface-visibility로 hardware accel 유지.
+ */
+.stf__parent {
+  transform: none !important;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}

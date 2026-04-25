@@ -191,6 +191,7 @@ Cloud Build 환경에서의 빌드/배포 시간을 획기적으로 단축하기
 *   **업데이트 날짜 시각화**: 카드 피처 뷰 왼쪽 하단에 통일된 연월일 데이트 레이블을 자동 투사하여 문서 히스토리를 강화했습니다.
 *   **반응형 모바일 대시보드 레이아웃**: 모바일 접속 시 '새 폴더', 'PDF 업로드', '로그아웃' 등 헤더 및 액션 버튼들이 모바일 폭에 맞추어 유연하게 수직(Column) 정렬/배치되도록 최적화했습니다.
 *   **모바일 뷰어(Viewer) 동적 스케일링 및 뷰포트 최적화**: `100dvh` 동적 뷰포트 고정과 상단 기준점(`center top`) 다이나믹 스케일 다운 알고리즘을 적용하여 좁은 스마트폰 화면에서도 책과 하단 UI가 안정적으로 동시 노출됩니다.
+*   **Android 페이지 넘김 깜빡임(Flickering) 수정**: `react-pageflip` 라이브러리가 `.stf__parent`에 자동 주입하는 `transform: translateZ(0)` GPU 레이어와, 외부 스케일 Wrapper의 `transform: scale()` GPU 레이어가 Android Chrome에서 이중 합성(Double Compositing) 충돌을 일으키는 것을 확인했습니다. `globals.css`에서 라이브러리의 translateZ를 `none !important`로 무력화하고, Wrapper에 `will-change: transform` + `backface-visibility: hidden`을 추가하여 단일 GPU 레이어로 통합했습니다. 추가로 모바일에서 `backdrop-filter: blur()` 제거(GPU 부하 감소) 및 `mobileScrollSupport={false}` 설정으로 Android 터치 이벤트 충돌을 방지했습니다.
 *   **컴포넌트 분리**: `FolderCard`, `FlipbookCard`, `ConfirmModal`, `CreateFolderModal` 등 UI 요소가 독립 컴포넌트로 분리되어 유지보수성이 향상되었습니다.
 
 ---

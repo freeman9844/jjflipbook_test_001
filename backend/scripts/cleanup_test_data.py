@@ -6,7 +6,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 backend_dir = os.path.dirname(current_dir)
 sys.path.append(backend_dir)
 
-from database import db
+from database import get_db
 from services.flipbook_service import delete_single_flipbook
 
 def main():
@@ -15,7 +15,7 @@ def main():
     target_titles = ["sample.pdf", "sample_test.pdf", "local_test.pdf", "E2E_TEST_local_test.pdf"]
 
     blobs_deleted = 0
-    docs = db.collection("flipbooks").stream()
+    docs = get_db().collection("flipbooks").stream()
     
     for doc in docs:
         data = doc.to_dict()

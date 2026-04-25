@@ -135,6 +135,9 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
                         height: '700px',
                         position: 'relative',
                         marginTop: isMobile ? '20px' : '0',
+                        willChange: 'transform',
+                        WebkitBackfaceVisibility: 'hidden',
+                        backfaceVisibility: 'hidden',
                     }}>
                         {/* @ts-ignore - react-pageflip 라이브러리 타입 미지원 */}
                         <HTMLFlipBook
@@ -148,6 +151,7 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
                             maxHeight={1500}
                             maxShadowOpacity={0.5}
                             showCover={true}
+                            mobileScrollSupport={false}
                             onFlip={(e: { data: number }) => setCurrentPage(e.data + 1)}
                         >
                             {book.image_urls.map((url: string, index: number) => (
@@ -261,7 +265,7 @@ const getStyles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     workspaceArea: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: isMobile ? '12px' : '24px', overflow: 'hidden' },
     pageItem: { backgroundColor: 'white', boxShadow: '0 0 15px rgba(0,0,0,0.15)', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', width: '100%', height: '100%' },
     pageImage: { width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' },
-    bottomBar: { position: 'absolute', bottom: isMobile ? '12px' : '24px', display: 'flex', gap: '24px', backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '7px 16px', borderRadius: '24px', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)', backdropFilter: 'blur(10px)', alignItems: 'center', transform: isMobile ? 'scale(0.9)' : 'none' },
+    bottomBar: { position: 'absolute', bottom: isMobile ? '12px' : '24px', display: 'flex', gap: '24px', backgroundColor: 'rgba(255, 255, 255, 0.97)', padding: '7px 16px', borderRadius: '24px', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)', backdropFilter: isMobile ? 'none' : 'blur(10px)', alignItems: 'center', transform: isMobile ? 'scale(0.9)' : 'none' },
     zoomControl: { display: 'flex', alignItems: 'center', gap: '8px' },
     pillBtn: { width: '22px', height: '22px', border: 'none', backgroundColor: '#f1f3f4', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: '#5f6368' },
     zoomText: { fontSize: '12px', fontWeight: 500, color: '#3c4043', width: '36px', textAlign: 'center' },
