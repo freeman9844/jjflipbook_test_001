@@ -135,9 +135,6 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
                         height: '700px',
                         position: 'relative',
                         marginTop: isMobile ? '20px' : '0',
-                        willChange: 'transform',
-                        WebkitBackfaceVisibility: 'hidden',
-                        backfaceVisibility: 'hidden',
                     }}>
                         {/* @ts-ignore - react-pageflip 라이브러리 타입 미지원 */}
                         <HTMLFlipBook
@@ -150,8 +147,10 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
                             minHeight={400}
                             maxHeight={1500}
                             maxShadowOpacity={0.5}
-                            showCover={true}
+                            showCover={false}
                             mobileScrollSupport={false}
+                            drawShadow={false}
+                            flippingTime={600}
                             onFlip={(e: { data: number }) => setCurrentPage(e.data + 1)}
                         >
                             {book.image_urls.map((url: string, index: number) => (

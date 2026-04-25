@@ -43,13 +43,24 @@ a {
 }
 
 /*
- * Android 깜빡임 수정:
- * page-flip 라이브러리가 .stf__parent에 translateZ(0)를 주입해 GPU 레이어를 생성함.
- * 외부 wrapper의 transform: scale()이 이미 GPU 레이어를 생성하므로 두 레이어가 충돌.
- * translateZ(0)를 제거하고 backface-visibility로 hardware accel 유지.
+ * Android 깜빡임 수정 (3중 GPU 레이어 충돌 제거):
+ *
+ * 1. .stf__parent: 라이브러리가 translateZ(0)로 GPU 레이어를 생성 → none으로 차단
+ * 2. .stf__block: perspective: 2000px가 3D compositing context를 생성
+ *    → Android Chrome은 이 3D context를 외부 scale() 레이어와 합성할 때 frame 타이밍 불일치 발생
+ *    → perspective: none으로 제거
+ * 3. .stf__item: transform-style: preserve-3d가 페이지마다 개별 GPU 레이어를 생성
+ *    → 페이지 수만큼 GPU 레이어가 누적되어 Android Skia 합성기에 과부하 발생
+ *    → transform-style: flat으로 제거
  */
 .stf__parent {
   transform: none !important;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
+}
+
+.stf__block {
+  perspective: none !important;
+}
+
+.stf__item {
+  transform-style: flat !important;
 }
