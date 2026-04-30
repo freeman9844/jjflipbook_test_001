@@ -101,10 +101,12 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
     if (!isMounted) return <div style={styles.container} />;
 
     const hasImages = book.image_urls && book.image_urls.length > 0;
-    const scale = Math.min(
-        (windowWidth - (isMobile ? 40 : 240)) / 500,
-        (windowHeight - (isMobile ? 220 : 80)) / 700
-    ) * (zoom / 100);
+    // transform: scale() 대신 직접 크기 계산 → iOS 터치 좌표 불일치 방지
+    const maxBookW = windowWidth - (isMobile ? 40 : 240);
+    const maxBookH = windowHeight - (isMobile ? 220 : 80);
+    const fitScale = Math.min(maxBookW / 500, maxBookH / 700);
+    const bookWidth = Math.max(100, Math.round(500 * fitScale * (zoom / 100)));
+    const bookHeight = Math.max(150, Math.round(700 * fitScale * (zoom / 100)));
 
     return (
         <div style={styles.container}>
@@ -129,26 +131,24 @@ export default function FlipbookViewer({ params }: { params: Promise<{ uuidKey: 
             <div style={styles.workspaceArea}>
                 {hasImages ? (
                     <div style={{
-                        transform: `scale(${scale})`,
-                        transformOrigin: isMobile ? 'center top' : 'center center',
-                        width: '500px',
-                        height: '700px',
+                        width: `${bookWidth}px`,
+                        height: `${bookHeight}px`,
                         position: 'relative',
                         marginTop: isMobile ? '20px' : '0',
                     }}>
                         {/* @ts-ignore - react-pageflip 라이브러리 타입 미지원 */}
                         <HTMLFlipBook
                             ref={flipBookRef}
-                            width={500}
-                            height={700}
+                            width={bookWidth}
+                            height={bookHeight}
                             size="fixed"
-                            minWidth={300}
-                            maxWidth={1000}
-                            minHeight={400}
-                            maxHeight={1500}
+                            minWidth={100}
+                            maxWidth={1500}
+                            minHeight={150}
+                            maxHeight={2000}
                             maxShadowOpacity={0.5}
                             showCover={false}
-                            mobileScrollSupport={false}
+                            mobileScrollSupport={true}
                             drawShadow={false}
                             flippingTime={600}
                             onFlip={(e: { data: number }) => setCurrentPage(e.data + 1)}
@@ -264,12 +264,12 @@ const getStyles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     workspaceArea: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: isMobile ? '12px' : '24px', overflow: 'hidden' },
     pageItem: { backgroundColor: 'white', boxShadow: '0 0 15px rgba(0,0,0,0.15)', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', width: '100%', height: '100%' },
     pageImage: { width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' },
-    bottomBar: { position: 'absolute', bottom: isMobile ? '12px' : '24px', display: 'flex', gap: '24px', backgroundColor: 'rgba(255, 255, 255, 0.97)', padding: '7px 16px', borderRadius: '24px', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)', backdropFilter: isMobile ? 'none' : 'blur(10px)', alignItems: 'center', transform: isMobile ? 'scale(0.9)' : 'none' },
+    bottomBar: { position: 'absolute', bottom: isMobile ? '12px' : '24px', display: 'flex', gap: isMobile ? '16px' : '24px', backgroundColor: 'rgba(255, 255, 255, 0.97)', padding: isMobile ? '6px 12px' : '7px 16px', borderRadius: '24px', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)', backdropFilter: isMobile ? 'none' : 'blur(10px)', alignItems: 'center' },
     zoomControl: { display: 'flex', alignItems: 'center', gap: '8px' },
-    pillBtn: { width: '22px', height: '22px', border: 'none', backgroundColor: '#f1f3f4', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: '#5f6368' },
+    pillBtn: { width: '22px', height: '22px', border: 'none', backgroundColor: '#f1f3f4', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: '#5f6368', touchAction: 'manipulation' },
     zoomText: { fontSize: '12px', fontWeight: 500, color: '#3c4043', width: '36px', textAlign: 'center' },
     pagerControl: { display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '1px solid #e8eaed', paddingLeft: '16px' },
-    pagerBtn: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#5f6368', padding: 0 },
+    pagerBtn: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#5f6368', padding: 0, touchAction: 'manipulation' },
     pagerText: { fontSize: '12px', fontWeight: 500, color: '#3c4043' },
     musicControl: { display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '1px solid #e8eaed', paddingLeft: '16px' },
     musicBtn: { border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', borderRadius: '50%', transition: 'all 0.2s', width: '32px', height: '32px' },

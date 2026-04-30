@@ -174,7 +174,7 @@ Cloud Build 환경에서의 빌드/배포 시간을 획기적으로 단축하기
 ### 5. 스마트 미디어 & 원본 에셋 보존 (Original PDF & Audio)
 *   **원본 PDF 영구 보존**: PDF 업로드 시 이미지로 쪼개질 뿐만 아니라, 뷰어 사용자가 언제든 원본을 다운로드할 수 있도록 원본 `.pdf` 파일 역시 GCS 버킷에 동시 업로드되어 영구 보존됩니다.
 *   **직관적인 다운로드 UI**: 플립북 뷰어 하단 컨트롤 바에 'PDF 다운로드 아이콘'이 독립적으로 렌더링되며, 클릭 시 GCS 원본 링크를 통해 원본 파일이 다이렉트로 다운로드됩니다.
-*   **배경음악 우회 락해제 (Autoplay Bypass)**: 모바일(iOS Safari 등)의 엄격한 '자동 재생 차단 정책(Autoplay Policy)'을 완벽히 우회하기 위해, 뷰어 화면 어디든 첫 터치(`pointerdown`, `touchstart`)가 발생하는 즉시 백그라운드 `.mp3` 오디오의 재생 락을 해제(Unlock)하는 이벤트 리스너를 연동했습니다.
+*   **배경음악 우회 락해제 (Autoplay Bypass)**: 모바일(iOS Safari 등)의 엄격한 '자동 재생 차단 정책(Autoplay Policy)'을 완벽히 우회하기 위해, 뷰어 화면 어디든 첫 터치(`pointerdown`)가 발생하는 즉시 백그라운드 `.mp3` 오디오의 재생 락을 해제(Unlock)하는 이벤트 리스너를 연동했습니다. (`touchstart`와의 이중 등록 제거 — iOS 첫 탭 이중 소비 방지)
 
 ### 6. 다이나믹 Lo-Fi BGM 플레이리스트 자동화 (Dynamic Audio Pipeline)
 *   **GCS 기반 분산 오디오 저장소**: Repository 용량 최적화 및 빌드 속도 개선을 위해 150MB가 넘는 수십 개의 배경음악 `.mp3` 파일들을 로컬 폴더(`frontend/public`)가 아닌 **Google Cloud Storage 버킷**으로 전면 분리 이관했습니다.
@@ -191,7 +191,8 @@ Cloud Build 환경에서의 빌드/배포 시간을 획기적으로 단축하기
 *   **업데이트 날짜 시각화**: 카드 피처 뷰 왼쪽 하단에 통일된 연월일 데이트 레이블을 자동 투사하여 문서 히스토리를 강화했습니다.
 *   **반응형 모바일 대시보드 레이아웃**: 모바일 접속 시 '새 폴더', 'PDF 업로드', '로그아웃' 등 헤더 및 액션 버튼들이 모바일 폭에 맞추어 유연하게 수직(Column) 정렬/배치되도록 최적화했습니다.
 *   **모바일 뷰어(Viewer) 동적 스케일링 및 뷰포트 최적화**: `100dvh` 동적 뷰포트 고정과 상단 기준점(`center top`) 다이나믹 스케일 다운 알고리즘을 적용하여 좁은 스마트폰 화면에서도 책과 하단 UI가 안정적으로 동시 노출됩니다.
-*   **Android 페이지 넘김 깜빡임(Flickering) 수정**: `react-pageflip` 라이브러리가 `.stf__parent`에 자동 주입하는 `transform: translateZ(0)` GPU 레이어와, 외부 스케일 Wrapper의 `transform: scale()` GPU 레이어가 Android Chrome에서 이중 합성(Double Compositing) 충돌을 일으키는 것을 확인했습니다. `globals.css`에서 라이브러리의 translateZ를 `none !important`로 무력화하고, Wrapper에 `will-change: transform` + `backface-visibility: hidden`을 추가하여 단일 GPU 레이어로 통합했습니다. 추가로 모바일에서 `backdrop-filter: blur()` 제거(GPU 부하 감소) 및 `mobileScrollSupport={false}` 설정으로 Android 터치 이벤트 충돌을 방지했습니다.
+*   **Android 페이지 넘김 깜빡임(Flickering) 수정**: `react-pageflip` 라이브러리가 `.stf__parent`에 자동 주입하는 `transform: translateZ(0)` GPU 레이어와, 외부 스케일 Wrapper의 `transform: scale()` GPU 레이어가 Android Chrome에서 이중 합성(Double Compositing) 충돌을 일으키는 것을 확인했습니다. `globals.css`에서 `.is-android` 클래스에만 translateZ 무력화(`none !important`)·perspective 제거·`transform-style: flat` 적용을 스코프하여 Android 전용 GPU 레이어를 통합했습니다. `layout.tsx` 최상단 인라인 스크립트가 `navigator.userAgent`로 Android를 감지해 `<html>`에 `is-android` 클래스를 즉시 부착합니다.
+*   **iPhone(iOS Safari) 터치/클릭 불가 수정**: 4가지 원인을 동시에 해결했습니다. ① `mobileScrollSupport={false}` → `true` 변경 — 라이브러리가 `touchstart`에 `preventDefault()` 호출 시 iOS에서 click 이벤트가 전부 소멸되는 문제 해소. ② `globals.css`의 Android GPU 픽스를 `.is-android`로 격리 — `transform-style: flat`이 iOS 제스처 인식을 파괴하던 부작용 제거. ③ 플립북 크기를 `transform: scale()` Wrapper 대신 `bookWidth`/`bookHeight`를 직접 계산해 props로 전달 — CSS 스케일 변환에 의한 iOS 터치 좌표 불일치 방지. ④ `button, a { touch-action: manipulation }` 전역 적용 — iOS 300ms 탭 딜레이 제거.
 *   **컴포넌트 분리**: `FolderCard`, `FlipbookCard`, `ConfirmModal`, `CreateFolderModal` 등 UI 요소가 독립 컴포넌트로 분리되어 유지보수성이 향상되었습니다.
 
 ---

@@ -35,6 +35,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body>
+        {/* Android 감지: is-android 클래스를 html에 추가하여 Android 전용 GPU 핫픽스를 iOS와 격리 */}
+        <script dangerouslySetInnerHTML={{__html: `if(/Android/i.test(navigator.userAgent))document.documentElement.classList.add('is-android')`}} />
         <AuthGuard>
           {children}
         </AuthGuard>

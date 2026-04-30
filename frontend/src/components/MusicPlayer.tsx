@@ -42,15 +42,14 @@ export default function MusicPlayer() {
         };
 
         if (typeof window !== 'undefined' && !isPlaying) {
+            // pointerdown만 사용: touchstart를 중복 등록하면 iOS 첫 탭을 이중 소비
             window.addEventListener('pointerdown', unlockAudio, { once: true });
-            window.addEventListener('touchstart', unlockAudio, { once: true });
             window.addEventListener('keydown', unlockAudio, { once: true });
         }
 
         return () => {
             if (typeof window !== 'undefined') {
                 window.removeEventListener('pointerdown', unlockAudio);
-                window.removeEventListener('touchstart', unlockAudio);
                 window.removeEventListener('keydown', unlockAudio);
             }
         };

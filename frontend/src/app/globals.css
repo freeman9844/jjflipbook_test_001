@@ -42,8 +42,15 @@ a {
   100% { transform: rotate(360deg); }
 }
 
+/* iOS 터치 300ms 딜레이 제거 + 탭 하이라이트 제거 */
+button, a, [role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /*
  * Android 깜빡임 수정 (3중 GPU 레이어 충돌 제거):
+ * .is-android 클래스로 스코프를 제한하여 iOS에서 터치 이벤트가 깨지는 부작용 방지.
  *
  * 1. .stf__parent: 라이브러리가 translateZ(0)로 GPU 레이어를 생성 → none으로 차단
  * 2. .stf__block: perspective: 2000px가 3D compositing context를 생성
@@ -51,16 +58,16 @@ a {
  *    → perspective: none으로 제거
  * 3. .stf__item: transform-style: preserve-3d가 페이지마다 개별 GPU 레이어를 생성
  *    → 페이지 수만큼 GPU 레이어가 누적되어 Android Skia 합성기에 과부하 발생
- *    → transform-style: flat으로 제거
+ *    → transform-style: flat으로 제거 (iOS에 적용 시 제스처 인식 파괴)
  */
-.stf__parent {
+.is-android .stf__parent {
   transform: none !important;
 }
 
-.stf__block {
+.is-android .stf__block {
   perspective: none !important;
 }
 
-.stf__item {
+.is-android .stf__item {
   transform-style: flat !important;
 }
